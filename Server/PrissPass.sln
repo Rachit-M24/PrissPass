@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrissPass.Api", "PrissPass.Api\PrissPass.Api.csproj", "{D0AAEFED-2204-4D7C-8C69-B33D3FE06A10}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrissPass.Data", "PrissPass.Data\PrissPass.Data.csproj", "{F72954BD-B695-400D-8229-53C6803756EA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrissPass.Core", "PrissPass.Core\PrissPass.Core.csproj", "{E2D777DD-B0D5-4DF8-B9E8-946219DE78C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrissPass.Repository", "PrissPass.Repository\PrissPass.Repository.csproj", "{44696596-35DE-406B-941C-05C62CD8FDBC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrissPass.Service", "PrissPass.Service\PrissPass.Service.csproj", "{9706E062-9C1B-4226-B9FF-2C46BE5B557A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D0AAEFED-2204-4D7C-8C69-B33D3FE06A10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0AAEFED-2204-4D7C-8C69-B33D3FE06A10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0AAEFED-2204-4D7C-8C69-B33D3FE06A10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0AAEFED-2204-4D7C-8C69-B33D3FE06A10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F72954BD-B695-400D-8229-53C6803756EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F72954BD-B695-400D-8229-53C6803756EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F72954BD-B695-400D-8229-53C6803756EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F72954BD-B695-400D-8229-53C6803756EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2D777DD-B0D5-4DF8-B9E8-946219DE78C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2D777DD-B0D5-4DF8-B9E8-946219DE78C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2D777DD-B0D5-4DF8-B9E8-946219DE78C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2D777DD-B0D5-4DF8-B9E8-946219DE78C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44696596-35DE-406B-941C-05C62CD8FDBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44696596-35DE-406B-941C-05C62CD8FDBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44696596-35DE-406B-941C-05C62CD8FDBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44696596-35DE-406B-941C-05C62CD8FDBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9706E062-9C1B-4226-B9FF-2C46BE5B557A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9706E062-9C1B-4226-B9FF-2C46BE5B557A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9706E062-9C1B-4226-B9FF-2C46BE5B557A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9706E062-9C1B-4226-B9FF-2C46BE5B557A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
