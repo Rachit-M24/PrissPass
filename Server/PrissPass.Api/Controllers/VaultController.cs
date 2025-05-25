@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
-// [Authorize]
+[Authorize]
 public class VaultController : ControllerBase
 {
     private readonly IRepository<VaultItem> _vaultRepository;
@@ -25,7 +25,7 @@ public class VaultController : ControllerBase
     }
 
     private Guid UserId =>
-        Guid.Parse(_httpContextAccessor.HttpContext?.User?.FindFirstValue("nameid")
+        Guid.Parse(_httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new UnauthorizedAccessException("User ID not found in claims."));
 
     [HttpPost]

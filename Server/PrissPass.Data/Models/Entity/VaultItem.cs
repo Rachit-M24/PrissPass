@@ -18,6 +18,5 @@ public class VaultItem
     // Foreign Key
     public Guid UserId { get; set; }
 
-    // Navigation property
     public User User { get; set; }
 }

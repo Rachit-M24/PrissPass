@@ -283,6 +283,11 @@ obj/
 /node_modules
 /wwwroot/node_modules
 
+# app settings files
+appsettings.Development.json
+appsettings.Production.json
+/PrissPass/Server/PrissPass.Api/appsettings.json
+
 ### react ###
 .DS_*
 logs

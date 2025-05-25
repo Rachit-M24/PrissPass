@@ -6,30 +6,33 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
 builder.Services.AddTransient<JwtService>();
 builder.Services.AddTransient<EncryptionService>();
 builder.Services.AddDbContext<PrissPassContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("default")));
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 
-builder.Services.AddAuthentication("Bearer").AddJwtBearer("Bearer", options =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:SecretKey"]);
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new()
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]))
-        };
-    });
-
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidateAudience = false,
+        ClockSkew = TimeSpan.Zero
+    };
+});
 builder.Services.AddAuthorization();
 
 builder.Services.AddEndpointsApiExplorer();
