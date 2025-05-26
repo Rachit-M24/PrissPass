@@ -35,8 +35,7 @@ public class AuthController : ControllerBase
         await _userRepository.AddAsync(user);
         await _userRepository.SaveChangesAsync();
 
-        var token = _jwtService.GenerateToken(user);
-        return Ok(new { Token = token });
+        return Ok(new { Message = "You have registered succefully please use your master password to login." });
     }
 
     [HttpPost("login")]
@@ -44,8 +43,8 @@ public class AuthController : ControllerBase
     {
         var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
         if (user == null || !_encryptionService.VerifyPassword(
-            request.MasterPassword, 
-            user.MasterPassword, 
+            request.MasterPassword,
+            user.MasterPassword,
             user.PasswordSalt))
         {
             return Unauthorized("Invalid email or password");
