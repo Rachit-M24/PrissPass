@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class VaultController : ControllerBase
 {
     private readonly IRepository<VaultItem> _vaultRepository;
@@ -28,36 +27,32 @@ public class VaultController : ControllerBase
         Guid.Parse(_httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new UnauthorizedAccessException("User ID not found in claims."));
 
-    [HttpPost]
-    public async Task<IActionResult> AddItem([FromBody] VaultItemRequest request)
+    [Authorize]
+    [HttpPost("AddVaultItem")]
+    public async Task<IActionResult> AddItem([FromBody] VaultItemRequest request, [FromQuery] string masterPassword)
     {
         var user = await _userRepository.GetByIdAsync(UserId);
         if (user == null) return Unauthorized();
 
-        var userKey = _encryptionService.DeriveUserKey(request.Password, user.PasswordSalt);
+        var userKey = _encryptionService.DeriveUserKey(masterPassword, user.PasswordSalt);
 
         var item = new VaultItem
         {
             SiteName = request.SiteName,
-            Url = request.Url,
-            EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey),
-            Notes = request.Notes,
+            EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url, userKey),
+            EncryptedPassword = _encryptionService.EncryptWithUserKey(request.EncryptedPassword, userKey),
+            EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes, userKey),
             UserId = UserId
         };
 
         await _vaultRepository.AddAsync(item);
         await _vaultRepository.SaveChangesAsync();
 
-        return Ok(new
-        {
-            item.VaultId,
-            item.SiteName,
-            item.Url,
-            item.Notes
-        });
+        return Ok(new { messge = "We've securely stored your data, Now you can forget your password 🙃." });
     }
 
-    [HttpGet]
+    [Authorize]
+    [HttpGet("GetVaultItems")]
     public async Task<IActionResult> GetItems([FromQuery] string masterPassword)
     {
         var user = await _userRepository.GetByIdAsync(UserId);
@@ -74,9 +69,9 @@ public class VaultController : ControllerBase
         {
             VaultId = i.VaultId,
             SiteName = i.SiteName,
-            Url = i.Url,
+            Url = _encryptionService.DecryptWithUserKey(i.EncryptedUrl, userKey),
             Password = _encryptionService.DecryptWithUserKey(i.EncryptedPassword, userKey),
-            Notes = i.Notes
+            Notes = _encryptionService.DecryptWithUserKey(i.EncryptedNotes, userKey)
         }).ToList();
 
         return Ok(decryptedItems);

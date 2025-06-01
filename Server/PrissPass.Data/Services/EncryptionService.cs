@@ -13,12 +13,14 @@ public class EncryptionService
         _configuration = configuration;
         _pepper = Encoding.UTF8.GetBytes(configuration["Encryption:Pepper"]);
     }
-    
+
     public byte[] DeriveUserKey(string masterPassword, string userSalt)
     {
+        var saltWithPepper = Encoding.UTF8.GetBytes(userSalt + Convert.ToBase64String(_pepper));
+
         using var deriveBytes = new Rfc2898DeriveBytes(
             masterPassword,
-            Encoding.UTF8.GetBytes(userSalt + _configuration["Encryption:Pepper"]),
+            saltWithPepper,
             100000,
             HashAlgorithmName.SHA512);
 
@@ -65,7 +67,7 @@ public class EncryptionService
         using var ms = new MemoryStream(cipher);
         using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
         using var sr = new StreamReader(cs);
-        
+
         return sr.ReadToEnd();
     }
 
@@ -73,13 +75,13 @@ public class EncryptionService
     public string HashPassword(string password, out string salt)
     {
         salt = Convert.ToBase64String(RandomNumberGenerator.GetBytes(16));
-        
+
         using var pbkdf2 = new Rfc2898DeriveBytes(
             password,
             Encoding.UTF8.GetBytes(salt + Convert.ToBase64String(_pepper)),
             100000,
             HashAlgorithmName.SHA512);
-            
+
         var hash = pbkdf2.GetBytes(64); // 512-bit hash
         return Convert.ToBase64String(hash);
     }
@@ -91,7 +93,7 @@ public class EncryptionService
             Encoding.UTF8.GetBytes(salt + Convert.ToBase64String(_pepper)),
             100000,
             HashAlgorithmName.SHA512);
-            
+
         var hashToVerify = pbkdf2.GetBytes(64);
         return CryptographicOperations.FixedTimeEquals(
             hashToVerify,
