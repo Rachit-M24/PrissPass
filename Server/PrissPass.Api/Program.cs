@@ -14,6 +14,15 @@ builder.Services.AddTransient<EncryptionService>();
 builder.Services.AddDbContext<PrissPassContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("default")));
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontendDev", policy =>
+    {
+        policy.WithOrigins("your allowed origins here")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddAuthentication(options =>
 {
@@ -70,8 +79,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
+app.UseCors("AllowFrontendDev");
 app.UseAuthorization();
 
 app.MapControllers();
