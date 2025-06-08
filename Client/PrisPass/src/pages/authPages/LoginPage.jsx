@@ -21,9 +21,14 @@ const LoginPage = () => {
     setCredentials((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    dispatch(loginUser(credentials));
+    try {
+      await dispatch(loginUser(credentials)).unwrap();
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
   };
 
   useEffect(() => {
