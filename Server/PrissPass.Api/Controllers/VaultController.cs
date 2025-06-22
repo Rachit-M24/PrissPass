@@ -6,19 +6,19 @@ using Microsoft.AspNetCore.Mvc;
 [Route("api/[controller]")]
 public class VaultController : ControllerBase
 {
-    private readonly IRepository<VaultItem> _vaultRepository;
-    private readonly IRepository<User> _userRepository;
+    private readonly IGenericService<VaultItem> _vaultService;
+    private readonly IGenericService<User> _userService;
     private readonly EncryptionService _encryptionService;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public VaultController(
-        IRepository<VaultItem> vaultRepository,
-        IRepository<User> userRepository,
+        IGenericService<VaultItem> vaultService,
+        IGenericService<User> userService,
         EncryptionService encryptionService,
         IHttpContextAccessor httpContextAccessor)
     {
-        _vaultRepository = vaultRepository;
-        _userRepository = userRepository;
+        _vaultService = vaultService;
+        _userService = userService;
         _encryptionService = encryptionService;
         _httpContextAccessor = httpContextAccessor;
     }
@@ -31,31 +31,69 @@ public class VaultController : ControllerBase
     [HttpPost("AddVaultItem")]
     public async Task<IActionResult> AddItem([FromBody] VaultItemRequest request, [FromQuery] string masterPassword)
     {
-        var user = await _userRepository.GetByIdAsync(UserId);
+        var user = await _userService.GetByIdAsync(UserId);
         if (user == null) return Unauthorized();
 
         var userKey = _encryptionService.DeriveUserKey(masterPassword, user.PasswordSalt);
 
         var item = new VaultItem
         {
-            SiteName = request.SiteName,
+            SiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey),
             EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url, userKey),
             EncryptedPassword = _encryptionService.EncryptWithUserKey(request.EncryptedPassword, userKey),
             EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes, userKey),
             UserId = UserId
         };
 
-        await _vaultRepository.AddAsync(item);
-        await _vaultRepository.SaveChangesAsync();
+        await _vaultService.AddAsync(item);
+        await _vaultService.SaveChangesAsync();
 
-        return Ok(new { messge = "We've securely stored your data, Now you can forget your password 🙃." });
+        return Ok(new { message = "We've securely stored your data, now you can forget your password 🙃." });
+    }
+
+    [Authorize]
+    [HttpPut("UpdateVaultItem/{vaultId}")]
+    public async Task<IActionResult> UpdateItem(Guid vaultId, [FromBody] VaultItemRequest request, [FromQuery] string masterPassword)
+    {
+        var user = await _userService.GetByIdAsync(UserId);
+        if (user == null) return Unauthorized();
+
+        var existingItem = await _vaultService.GetByIdAsync(vaultId);
+        if (existingItem == null || existingItem.UserId != UserId)
+            return NotFound("Vault item not found.");
+
+        var userKey = _encryptionService.DeriveUserKey(masterPassword, user.PasswordSalt);
+
+        existingItem.SiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
+        existingItem.EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url, userKey);
+        existingItem.EncryptedPassword = _encryptionService.EncryptWithUserKey(request.EncryptedPassword, userKey);
+        existingItem.EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes, userKey);
+
+        await _vaultService.UpdateAsync(existingItem);
+        await _vaultService.SaveChangesAsync();
+
+        return Ok(new { message = "Vault item updated successfully." });
+    }
+
+    [Authorize]
+    [HttpDelete("DeleteVaultItem/{vaultId}")]
+    public async Task<IActionResult> DeleteItem(Guid vaultId)
+    {
+        var item = await _vaultService.GetByIdAsync(vaultId);
+        if (item == null || item.UserId != UserId)
+            return NotFound("Vault item not found or not authorized.");
+
+        await _vaultService.RemoveAsync(item);
+        await _vaultService.SaveChangesAsync();
+
+        return Ok(new { message = "Vault item deleted successfully." });
     }
 
     [Authorize]
     [HttpGet("GetVaultItems")]
     public async Task<IActionResult> GetItems([FromQuery] string masterPassword)
     {
-        var user = await _userRepository.GetByIdAsync(UserId);
+        var user = await _userService.GetByIdAsync(UserId);
         if (user == null) return Unauthorized();
 
         if (!_encryptionService.VerifyPassword(masterPassword, user.MasterPassword, user.PasswordSalt))
@@ -63,12 +101,12 @@ public class VaultController : ControllerBase
 
         var userKey = _encryptionService.DeriveUserKey(masterPassword, user.PasswordSalt);
 
-        var items = await _vaultRepository.FindAsync(v => v.UserId == UserId);
+        var items = await _vaultService.FindAsync(v => v.UserId == UserId);
 
         var decryptedItems = items.Select(i => new VaultItemResponse
         {
             VaultId = i.VaultId,
-            SiteName = i.SiteName,
+            SiteName = _encryptionService.DecryptWithUserKey(i.SiteName, userKey),
             Url = _encryptionService.DecryptWithUserKey(i.EncryptedUrl, userKey),
             Password = _encryptionService.DecryptWithUserKey(i.EncryptedPassword, userKey),
             Notes = _encryptionService.DecryptWithUserKey(i.EncryptedNotes, userKey)
