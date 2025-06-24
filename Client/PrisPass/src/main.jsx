@@ -10,6 +10,8 @@ import "./index.css";
 import LoginPage from "./pages/authPages/LoginPage.jsx";
 import SignupPage from "./pages/authPages/SignupPage.jsx";
 import DashboardPage from "./pages/Dashboard.jsx";
+import VaultIndex from "./components/PasswordVault/VaultIndex.jsx";
+import AddPassword from "./components/Modals/AddPasswordModal/AddPassword.jsx";
 
 const router = createBrowserRouter([
   {
@@ -29,29 +31,26 @@ const router = createBrowserRouter([
         path: "signup",
         element: <SignupPage />,
       },
-      // {
-      //   path: "register",
-      //   element: <Register />,
-      // },
-      // {
-      //   element: <ProtectedLayout />,
-      //   children: [
-      //     {
-      //       index: true,
-      //       element: <Dashboard />,
-      //     },
-      //     {
-      //       path: "vault",
-      //       element: <Vault />,
-      //     },
-      //     {
-      //       path: "generator",
-      //       element: <Generator />,
-      //     },
-      //     {
-      //       path: "settings",
-      //       element: <Settings />,
-      //     },
+      {
+        path: "vault",
+        element: <VaultIndex />,
+      },
+      {
+        path: "add-password",
+        element: <AddPassword />,
+      },
+      //{
+      //  path: "vault",
+      //  element: <Vault />,
+      //},
+      //{
+      //  path: "generator",
+      //  element: <Generator />,
+      //},
+      //{
+      //  path: "settings",
+      //  element: <Settings />,
+      //},
       //   ],
       // },
       // {
