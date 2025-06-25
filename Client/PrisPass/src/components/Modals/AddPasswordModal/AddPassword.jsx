@@ -7,7 +7,7 @@ const AddPassword = () => {
         <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-100 mb-4">
           Add New Password
         </h2>
-        <form className="space-y-4">
+        <form className="space-y-4" method="POST"  action="/api/AddVaultItem">
           <div>
             <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
               Site
@@ -20,12 +20,32 @@ const AddPassword = () => {
           </div>
           <div>
             <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
-              Password
+              URL
+            </label>
+            <input
+              type="text"
+              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white"
+              placeholder="e.g., https://google.com"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
+              Encrypted Password
             </label>
             <input
               type="password"
               className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white"
-              placeholder="Enter password"
+              placeholder="Enter encrypted password"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
+              Notes
+            </label>
+            <input
+              type="text"
+              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white"
+              placeholder="Add notes"
             />
           </div>
           <button
