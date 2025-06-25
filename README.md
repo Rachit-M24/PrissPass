@@ -21,3 +21,8 @@ Day-8-June-2025
 -> implement the logout method of logout in auth slice
 -> implement the redirefction of routes on certain functionalities.
 -> implemented the log out in the current static dashboard.
+
+->Day-10-June-2025-to-25-June-2025
+-> Changes in the api for better encryption & decryption. 
+-> added modals getting the vault items (static)
+-> added field for adding password in the modal 
