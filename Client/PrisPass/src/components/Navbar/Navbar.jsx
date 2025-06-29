@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { LogOut, PlusCircle, Settings, ShieldCheck } from "lucide-react";
-import { logout } from "../../redux/slice/AuthSlice";
+import { logout } from "../../redux/slice/AuthSlice/AuthSlice";
 import MasterPasswordModal from "../Modals/PasswordModal/MasterPasswordModal.jsx";
 
 const Navbar = () => {

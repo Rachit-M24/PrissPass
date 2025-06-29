@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { registerUser } from "../../redux/slice/AuthSlice";
+import { registerUser } from "../../redux/slice/AuthSlice/AuthSlice";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -70,7 +70,7 @@ const SignupPage = () => {
             value={user.username}
             onChange={handleChange}
             className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="John Doe"
+            placeholder="Your Name"
           />
         </div>
 
@@ -89,7 +89,7 @@ const SignupPage = () => {
             value={user.email}
             onChange={handleChange}
             className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="you@example.com"
+            placeholder="skibiddi@example.com"
           />
         </div>
 

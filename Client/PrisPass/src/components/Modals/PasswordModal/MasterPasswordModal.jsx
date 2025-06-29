@@ -1,16 +1,37 @@
 import React from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { getVault } from "../../../redux/slice/vaultSlice/VaultSlice";
 
 const MasterPasswordModal = ({ isOpen, onClose, onSuccess }) => {
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password === "master123") {
+    if (password) {
       setError("");
-      setPassword("");
-      onSuccess();
-      onClose();
+      try {
+        const resultAction = await dispatch(
+          getVault({ masterPassword: password })
+        );
+        if (
+          resultAction.meta.requestStatus === "fulfilled"
+        ) {
+          setPassword("");
+          onSuccess && onSuccess();
+          onClose && onClose();
+          navigate("/dashboard/vault", {
+            state: { vaultItems: resultAction.payload.data },
+          });
+        } else {
+          setError("Incorrect master password");
+        }
+      } catch (err) {
+        setError("An error occurred");
+      }
     } else {
       setError("Incorrect master password");
     }

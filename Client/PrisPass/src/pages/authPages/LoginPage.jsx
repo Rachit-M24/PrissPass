@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser } from "../../redux/slice/AuthSlice";
+import { loginUser } from "../../redux/slice/AuthSlice/AuthSlice";
 
 const LoginPage = () => {
   const navigate = useNavigate();

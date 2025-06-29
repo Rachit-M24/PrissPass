@@ -1,12 +1,12 @@
 import React from "react";
 import { Lock } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const VaultIndex = () => {
-  const dummyPasswords = [
-    { site: "Google", password: "********" },
-    { site: "GitHub", password: "********" },
-    { site: "Netflix", password: "********" },
-  ];
+  const location = useLocation();
+  // Use data from navigation state or fallback to dummy
+  const vaultItems = location.state?.vaultItems || [];
+
   return (
     <React.Fragment>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
@@ -23,7 +23,7 @@ const VaultIndex = () => {
               </tr>
             </thead>
             <tbody>
-              {dummyPasswords.map((item, idx) => (
+              {vaultItems.map((item, idx) => (
                 <tr
                   key={idx}
                   className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
