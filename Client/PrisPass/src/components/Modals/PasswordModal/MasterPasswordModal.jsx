@@ -14,12 +14,11 @@ const MasterPasswordModal = ({ isOpen, onClose, onSuccess }) => {
     if (password) {
       setError("");
       try {
+        const token = localStorage.getItem("token");
         const resultAction = await dispatch(
-          getVault({ masterPassword: password })
+          getVault({ masterPassword: password, token })
         );
-        if (
-          resultAction.meta.requestStatus === "fulfilled"
-        ) {
+        if (resultAction.meta.requestStatus === "fulfilled") {
           setPassword("");
           onSuccess && onSuccess();
           onClose && onClose();
