@@ -7,12 +7,12 @@ const DashboardPage = () => {
     <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
       {/* Sidebar */}
       <Navbar />
+
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-y-auto">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">
-          Welcome, 👋
-        </h1>
-        <Outlet />
+      <main className="flex-1 lg:ml-0 overflow-y-auto">
+        <div className="lg:p-6 pt-20 lg:pt-6">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

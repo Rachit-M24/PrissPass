@@ -40,7 +40,7 @@ public class VaultController : ControllerBase
         {
             SiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey),
             EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url, userKey),
-            EncryptedPassword = _encryptionService.EncryptWithUserKey(request.EncryptedPassword, userKey),
+            EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey),
             EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes, userKey),
             UserId = UserId
         };
@@ -66,7 +66,7 @@ public class VaultController : ControllerBase
 
         existingItem.SiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
         existingItem.EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url, userKey);
-        existingItem.EncryptedPassword = _encryptionService.EncryptWithUserKey(request.EncryptedPassword, userKey);
+        existingItem.EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey);
         existingItem.EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes, userKey);
 
         await _vaultService.UpdateAsync(existingItem);

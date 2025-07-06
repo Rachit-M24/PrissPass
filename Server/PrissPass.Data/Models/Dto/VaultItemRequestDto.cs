@@ -9,7 +9,7 @@ public class VaultItemRequest
 
     [Required(ErrorMessage = "Please enter the password.")]
     [StringLength(100, MinimumLength = 8)]
-    public string EncryptedPassword { get; set; }
+    public string Password { get; set; }
 
     public string? Notes { get; set; }
 }
