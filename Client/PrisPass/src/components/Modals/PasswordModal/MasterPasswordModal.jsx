@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { getVault } from "../../../redux/slice/vaultSlice/VaultSlice";
+import { fetchVaultItems } from "../../../redux/slice/vaultSlice/VaultSlice";
+import { validateSession } from "../../../utils/sessionManager";
 
 const MasterPasswordModal = ({ isOpen, onClose, onSuccess }) => {
   const [password, setPassword] = React.useState("");
@@ -9,30 +10,69 @@ const MasterPasswordModal = ({ isOpen, onClose, onSuccess }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (isOpen) {
+      checkSessionAndAccess();
+    }
+  }, [isOpen]);
+
+  const checkSessionAndAccess = async () => {
+    try {
+      console.log("Checking session validity...");
+
+      // we need to check the session time as your brain is synonymous of cloud
+      const isSessionValid = await validateSession();
+
+      if (isSessionValid) {
+        console.log("Session is valid, attempting direct vault access...");
+        const resultAction = await dispatch(fetchVaultItems({}));
+
+        if (resultAction.meta.requestStatus === "fulfilled") {
+          console.log("Direct access successful with valid session");
+          onSuccess?.();
+          onClose?.();
+          navigate("/dashboard/vault", {
+            state: { vaultItems: resultAction.payload },
+          });
+          return;
+        }
+      }
+
+      // Keep modal open for password input
+    } catch (err) {
+      console.log("Session check error:", {
+        status: err?.response?.status,
+        message: err?.response?.data?.message,
+      });
+
+      if (err?.response?.status === 401) {
+        navigate("/");
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password) {
-      setError("");
-      try {
-        const token = localStorage.getItem("token");
-        const resultAction = await dispatch(
-          getVault({ masterPassword: password, token })
-        );
-        if (resultAction.meta.requestStatus === "fulfilled") {
-          setPassword("");
-          onSuccess && onSuccess();
-          onClose && onClose();
-          navigate("/dashboard/vault", {
-            state: { vaultItems: resultAction.payload.data },
-          });
-        } else {
-          setError("Incorrect master password");
-        }
-      } catch (err) {
-        setError("An error occurred");
+    if (!password) {
+      setError("Please enter your master password");
+      return;
+    }
+
+    try {
+      const resultAction = await dispatch(
+        fetchVaultItems({ masterPassword: password })
+      );
+
+      if (resultAction.meta.requestStatus === "fulfilled") {
+        setPassword("");
+        onSuccess?.();
+        onClose?.();
+        navigate("/dashboard/vault", {
+          state: { vaultItems: resultAction.payload },
+        });
       }
-    } else {
-      setError("Incorrect master password");
+    } catch (err) {
+      setError(err?.response?.data?.message || "Incorrect master password");
     }
   };
 

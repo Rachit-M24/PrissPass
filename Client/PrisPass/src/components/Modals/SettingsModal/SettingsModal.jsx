@@ -13,6 +13,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../../redux/slice/AuthSlice/AuthSlice";
 import { toast } from "react-toastify";
+import axios from "../../../utils/axiosConfig";
 
 const SettingsModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
@@ -24,7 +25,13 @@ const SettingsModal = ({ isOpen, onClose }) => {
     setShowLogoutConfirm(true);
   };
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
+    try {
+      await axios.post("/api/Auth/logout");
+    } catch (error) {
+      console.error("Logout API call failed:", error);
+    }
+
     dispatch(logout());
     navigate("/");
     toast.success("Logged out successfully!");

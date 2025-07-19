@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 const AddPassword = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [showMasterPassword, setShowMasterPassword] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -16,7 +16,6 @@ const AddPassword = () => {
     url: "",
     password: "",
     notes: "",
-    masterPassword: "",
   });
 
   const handleInputChange = (e) => {
@@ -30,11 +29,7 @@ const AddPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !formData.siteName.trim() ||
-      !formData.password.trim() ||
-      !formData.masterPassword.trim()
-    ) {
+    if (!formData.siteName.trim() || !formData.password.trim()) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -44,14 +39,12 @@ const AddPassword = () => {
       console.log("Submitting form data:", formData);
       await dispatch(
         addVaultItem({
-          masterPassword: formData.masterPassword,
           item: {
             siteName: formData.siteName,
             url: formData.url,
             password: formData.password,
             notes: formData.notes,
           },
-          token: localStorage.getItem("token"),
         })
       );
 
@@ -153,38 +146,6 @@ const AddPassword = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-            </div>
-
-            {/* Master Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Master Password *
-              </label>
-              <div className="relative">
-                <input
-                  type={showMasterPassword ? "text" : "password"}
-                  name="masterPassword"
-                  value={formData.masterPassword}
-                  onChange={handleInputChange}
-                  className="w-full p-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your master password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowMasterPassword(!showMasterPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  {showMasterPassword ? (
-                    <EyeOff size={20} />
-                  ) : (
-                    <Eye size={20} />
-                  )}
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Your master password is required to encrypt this password
-              </p>
             </div>
 
             {/* Notes */}

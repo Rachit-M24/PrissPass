@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import {
+  fetchVaultItems,
   deleteVaultItem,
   editVaultItem,
 } from "../../redux/slice/vaultSlice/VaultSlice";
@@ -24,6 +25,14 @@ const VaultIndex = () => {
   const vaultItems = useSelector((state) => state.vault.vaultItems);
   const loading = useSelector((state) => state.vault.loading);
 
+  useEffect(() => {
+    dispatch(fetchVaultItems())
+      .unwrap()
+      .catch((error) => {
+        console.log("Vault access error:", error);
+      });
+  }, [dispatch]);
+
   const [showPasswordIdx, setShowPasswordIdx] = useState(null);
   const [editIdx, setEditIdx] = useState(null);
   const [editData, setEditData] = useState({
@@ -32,8 +41,6 @@ const VaultIndex = () => {
     url: "",
     notes: "",
   });
-  const [masterPassword, setMasterPassword] = useState("");
-  const [showEditMasterPassword, setShowEditMasterPassword] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredItems = vaultItems.filter(
@@ -59,29 +66,21 @@ const VaultIndex = () => {
   };
 
   const handleEditSave = async () => {
-    if (!masterPassword.trim()) {
-      toast.error("Please enter your master password");
-      return;
-    }
-
     const item = vaultItems[editIdx];
     await dispatch(
       editVaultItem({
-        masterPassword: masterPassword,
-        itemId: item.id,
+        vaultId: item.vaultId,
         updatedItem: editData,
-        token: localStorage.getItem("token"),
       })
     );
     setEditIdx(null);
-    setMasterPassword("");
     toast.success("Password updated successfully!");
   };
 
-  const handleDelete = async (itemId) => {
+  const handleDelete = async (vaultId) => {
     await dispatch(
       deleteVaultItem({
-        itemId,
+        vaultId,
         token: localStorage.getItem("token"),
       })
     );
@@ -174,7 +173,7 @@ const VaultIndex = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredItems.map((item, idx) => (
               <div
-                key={item.id || idx}
+                key={item.vaultId || idx}
                 className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden"
               >
                 {/* Card Header */}
@@ -258,7 +257,7 @@ const VaultIndex = () => {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDelete(item.vaultId)}
                         className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors font-medium"
                       >
                         <Trash2 size={16} />
@@ -336,37 +335,6 @@ const VaultIndex = () => {
                   rows={3}
                   placeholder="Add any additional notes about this password"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Master Password *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showEditMasterPassword ? "text" : "password"}
-                    className="w-full p-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={masterPassword}
-                    onChange={(e) => setMasterPassword(e.target.value)}
-                    placeholder="Enter your master password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowEditMasterPassword(!showEditMasterPassword)
-                    }
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
-                  >
-                    {showEditMasterPassword ? (
-                      <EyeOff size={20} />
-                    ) : (
-                      <Eye size={20} />
-                    )}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Your master password is required to encrypt this password
-                </p>
               </div>
             </div>
             <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
