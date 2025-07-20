@@ -1,155 +1,263 @@
-# PrissPass
+# PrissPass - Encrypted Password Vault
 
 ## Overview
 
-The PrissPass application now includes a cookie-based session management system that allows users to enter their master password once per session, eliminating the need to re-enter it for every vault operation.
+PrissPass is a secure, encrypted password vault web application built with modern technologies. The application features military-grade encryption, session-based authentication, and a smooth user experience that eliminates the need for repeated master password entry.
 
-## Features
+## 🏗️ Architecture
 
-### Session-Based Access
+### Backend (.NET 8.0)
 
-- **Automatic Session Creation**: When a user logs in or enters their master password for the first time, a session is created
-- **Session Duration**: Sessions last for 30 minutes of inactivity
-- **Cookie Storage**: Session information is stored securely in HTTP-only cookies
-- **Automatic Extension**: Sessions are automatically extended when users perform vault operations
+- **Framework**: ASP.NET Core Web API
+- **Database**: SQL Server (SSMS) with Entity Framework Core
+- **Authentication**: JWT Bearer Tokens + HttpOnly Session Cookies
+- **Architecture Pattern**: Clean Architecture with Repository Pattern
+- **Caching**: In-Memory Cache for session management
 
-### User Experience Improvements
+### Frontend (React 19)
 
-- **No Repeated Master Password Entry**: Once a session is active, users can add, edit, and view passwords without entering their master password
-- **Visual Session Status**: A session status indicator shows when the session is active and time remaining
-- **Session Expiration Warning**: Users are warned when their session is about to expire (5 minutes remaining)
-- **Graceful Fallback**: If a session expires, users are prompted to enter their master password again
+- **Framework**: React 19 with Vite build tool
+- **State Management**: Redux Toolkit
+- **Routing**: React Router DOM v7
+- **Styling**: Tailwind CSS v4
+- **UI Components**: Lucide React Icons
+- **Notifications**: React Toastify
+
+## 🔐 Security Features
+
+### Encryption Implementation
+
+- **Password Hashing**: PBKDF2 with SHA512 (100,000 iterations)
+- **Data Encryption**: AES-256 for vault items
+- **Key Derivation**: User-specific keys derived from master password + salt + pepper
+- **Salt & Pepper**: Unique salt per user + application-wide pepper
+- **Secure Storage**: All sensitive data encrypted at rest
+
+### Authentication & Session Management
+
+- **Dual Authentication**: JWT tokens + HttpOnly session cookies
+- **Session Duration**: 30 minutes with automatic extension
+- **Secure Cookies**: HttpOnly, Secure, SameSite policies
+- **Server-Side Validation**: All session checks on backend
+- **Automatic Cleanup**: Expired sessions removed automatically
+
+## 📦 Tech Stack Details
+
+### Backend Dependencies
+
+```xml
+<!-- Core Framework -->
+<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0"/>
+<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10"/>
+
+<!-- Database -->
+<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0"/>
+<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0"/>
+<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0"/>
+
+<!-- Security & Caching -->
+<PackageReference Include="Isopoh.Cryptography.Argon2" Version="2.0.0"/>
+<PackageReference Include="System.Security.Claims" Version="4.3.0"/>
+<PackageReference Include="PostSharp.Patterns.Caching.IMemoryCache" Version="2025.1.5"/>
+
+<!-- API Documentation -->
+<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
+```
+
+### Frontend Dependencies
+
+```json
+{
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.5.3",
+    "@reduxjs/toolkit": "^2.0.0",
+    "react-redux": "^9.0.0",
+    "axios": "^1.9.0",
+    "tailwindcss": "^4.1.5",
+
+    "lucide-react": "^0.507.0",
+    "react-toastify": "^11.0.5"
+  }
+}
+```
+
+## 🗄️ Database Schema
+
+### Users Table
+
+- `UserId` (Guid, Primary Key)
+- `Username` (nvarchar)
+- `Email` (nvarchar)
+- `MasterPassword` (nvarchar, hashed)
+- `PasswordSalt` (nvarchar)
+
+### VaultItems Table
+
+- `VaultId` (Guid, Primary Key)
+- `SiteName` (nvarchar, encrypted)
+- `EncryptedUrl` (nvarchar, encrypted)
+- `EncryptedPassword` (nvarchar, encrypted)
+- `EncryptedNotes` (nvarchar, encrypted)
+- `UserId` (Guid, Foreign Key)
+
+## 🔄 Development Process
+
+### Project Evolution
+
+#### Phase 1: MVP (May-June)
+
+- **Authentication**: Master password required for every operation
+- **Security**: JWT-only authentication
+- **UX**: Basic but secure functionality
+
+#### Phase 2: Enhanced UX (July)
+
+- **Session Management**: HttpOnly cookies + session IDs
+- **UX Improvement**: Single master password entry per session
+- **Security**: Dual authentication (JWT + Session cookies)
+
+### Development Environment
+
+- **IDE**: Visual Studio 2022 / VS Code
+- **Database**: SQL Server Management Studio (SSMS)
+- **Frontend Dev Server**: Vite (localhost:5173)
+- **Backend API**: ASP.NET Core (localhost:5133)
+- **Package Manager**: NuGet (Backend) / npm (Frontend)
+
+## 🚀 Features
+
+### Core Functionality
+
+- **Secure Registration/Login**: Email + master password authentication
+- **Password Management**: Add, edit, delete, search encrypted passwords
+- **Session Management**: 30-minute sessions with automatic extension
+- **Real-time Search**: Filter vault items by site name or URL
+- **Copy to Clipboard**: One-click password copying
+- **Responsive Design**: Mobile-friendly interface
 
 ### Security Features
 
-- **Secure Cookies**: Session cookies are HTTP-only, secure, and use strict same-site policy
-- **Server-Side Validation**: All session validation happens on the server
-- **Automatic Cleanup**: Expired sessions are automatically cleaned up
-- **Encryption Key Caching**: User encryption keys are cached securely on the server
+- **Server-Side Encryption**: Secure encryption with user-specific keys
+- **Secure Transmission**: HTTPS with secure cookie policies
+- **Session Security**: Automatic session cleanup and validation
 
-## Technical Implementation
+## 🔧 Configuration
 
-### Frontend Components
+### Environment Variables
 
-#### Cookie Utilities (`utils/cookieUtils.js`)
+```env
+# Frontend (.env)
+VITE_BACKEND_API_URL=http://localhost:5133
 
-- `getCookie(name)`: Retrieve cookie values
-- `setCookie(name, value, options)`: Set cookies with security options
-- `deleteCookie(name)`: Remove cookies
-- `hasValidSession()`: Check if a valid session exists
-- `clearSession()`: Clear all session cookies
+# Backend (appsettings.json)
+ConnectionStrings:can't give that bro T_T;
+```
 
-#### Session Manager (`utils/sessionManager.js`)
+### Security Settings
 
-- `checkSessionExpiration()`: Check if current session has expired
-- `extendSession()`: Extend the current session
-- `getSessionTimeRemaining()`: Get time remaining in current session
-- `isSessionExpiringSoon()`: Check if session expires within 5 minutes
-
-#### Session Status Component (`components/SessionStatus/SessionStatus.jsx`)
-
-- Displays current session status
-- Shows time remaining
-- Warns when session is expiring soon
-- Automatically updates every second
-
-### Backend Implementation
-
-#### Authentication Controller
-
-- Creates session ID on login
-- Sets secure session cookies
-- Returns session information to frontend
-
-#### Vault Controller
-
-- Checks for valid session before requiring master password
-- Automatically extends session on successful operations
-- Falls back to master password if session is invalid
-
-## Usage
-
-### For Users
-
-1. **Login**: Enter your email and master password to log in
-2. **Session Creation**: A session is automatically created and you'll see a green "Session Active" indicator
-3. **Vault Operations**: Add, edit, and view passwords without entering master password
-4. **Session Monitoring**: Watch the session status indicator for time remaining
-5. **Session Expiration**: When session expires, you'll be prompted to enter master password again
-
-### For Developers
-
-#### Checking Session Status
-
-```javascript
-import { hasValidSession } from "../utils/cookieUtils";
-
-if (hasValidSession()) {
-  // Session is active, no master password needed
-} else {
-  // Session expired, require master password
+```json
+{
+  "Jwt": {
+    "SecretKey": "your-secret-key",
+    "Issuer": "your issuer",
+    "Audience": "your audience",
+    "ExpiryInMinutes": "450"
+  },
+  "Encryption": {
+    "Key": "your-encryption-key",
+    "Pepper": "your-pepper-value"
+  }
 }
 ```
 
-#### Handling Session Expiration
+## 🛠️ Installation & Setup
 
-```javascript
-import { checkSessionExpiration } from "../utils/sessionManager";
+### Backend Setup
 
-if (checkSessionExpiration()) {
-  // Session has expired, redirect to login or show master password modal
-}
-```
+1. **Database**: Create SQL Server database using SSMS
+2. **Migrations**: Run `dotnet ef database update`
+3. **Configuration**: Update `appsettings.json` with your connection string
+4. **Run**: `dotnet run` in PrissPass.Api directory
 
-#### Extending Session
+### Frontend Setup
 
-```javascript
-import { extendSession } from "../utils/sessionManager";
+1. **Dependencies**: `npm install`
+2. **Environment**: Create `.env` file with backend URL
+3. **Development**: `npm run dev`
+4. **Build**: `npm run build`
 
-// Call this after successful vault operations
-extendSession();
-```
+## 🔍 API Endpoints
 
-## Security Considerations
+### Authentication
 
-1. **Cookie Security**: All session cookies use secure, HTTP-only settings
-2. **Server-Side Validation**: Session validation happens on the server, not client
-3. **Automatic Cleanup**: Expired sessions are automatically removed
-4. **Encryption**: User keys are encrypted and cached securely
-5. **Fallback Security**: If session fails, master password is still required
+- `POST /api/Auth/Register` - User registration
+- `POST /api/Auth/login` - User login
+- `POST /api/Auth/logout` - User logout
 
-## Configuration
+### Vault Operations
 
-### Session Duration
+- `GET /api/Vault/GetAll` - Retrieve all vault items
+- `POST /api/Vault/AddVaultItem` - Add new password
+- `PUT /api/Vault/UpdateVaultItem/{id}` - Update password
+- `DELETE /api/Vault/DeleteVaultItem/{id}` - Delete password
 
-- Default: 30 minutes
-- Configurable in backend session cache settings
-- Frontend automatically syncs with backend timing
+## 🧪 Testing Data
 
-### Cookie Settings
+The application includes encrypted test data for demonstration purposes. All vault items are encrypted using AES-256 with user-specific keys derived from the master password.
 
-- `HttpOnly`: true (prevents XSS attacks)
-- `Secure`: true (HTTPS only)
-- `SameSite`: Strict (prevents CSRF attacks)
-- `Path`: / (available across the application)
+## 🔮 Future Enhancements
 
-## Troubleshooting
+### Planned Features
 
-### Common Issues
+- **Password Strength Meter**: zxcvbn-powered strength analysis
+- **CRUD Modals**: Enhanced modal interfaces with skeleton loaders
+- **Vault Export/Import**: Backup and restore functionality
+- **OAuth 2.0**: Social login integration
 
-1. **Session Not Working**: Check if cookies are enabled in browser
-2. **Session Expires Too Quickly**: Verify server time settings
-3. **Master Password Still Required**: Check if session cookies are being set properly
+### Technical Improvements
 
-### Debug Information
+- **Performance**: Implement virtual scrolling for large vaults
+- **Audit Logging**: Security event tracking
 
-- Session status is visible in the bottom-right corner
-- Browser developer tools can show cookie values
-- Server logs show session creation and validation
+## 🐛 Known Issues & Solutions
 
-## Future Enhancements
+### Common Development Issues
 
-1. **Session Renewal**: Allow users to extend sessions manually
-2. **Multiple Sessions**: Support for multiple concurrent sessions
-3. **Session History**: Track and display session activity
-4. **Advanced Security**: Additional session security features
+1. **CORS Errors**: Ensure backend CORS policy matches frontend origin
+2. **Session Expiration**: Check cookie settings and server time
+3. **Encryption Errors**: Verify pepper and key configuration
+4. **Database Connection**: Confirm SQL Server connection string
+
+### Debug Tips
+
+- **Frontend**: Check browser console for API errors
+- **Backend**: Monitor server logs for authentication issues
+- **Database**: Use SSMS to verify data encryption
+- **Network**: Use browser dev tools to inspect requests
+
+## 📚 Learning Outcomes
+
+### Technical Skills Developed
+
+- **Full-Stack Development**: React + .NET Core integration
+- **Security Implementation**: Encryption, authentication, session management
+- **Database Design**: Entity Framework with SQL Server
+- **State Management**: Redux Toolkit for complex state
+- **API Design**: RESTful endpoints with proper error handling
+
+### Development Lessons
+
+- **Patience in Debugging**: Complex security implementations require careful testing
+- **Security First**: Always prioritize security over convenience
+- **User Experience**: Balance security with usability
+- **Code Organization**: Clean architecture improves maintainability
+
+## 🤝 Contributing
+
+This project demonstrates modern web development practices with a focus on security. Feel free to explore the codebase and suggest improvements!
+
+---
+
+**Note**: This application is for educational and demonstration purposes. Always follow security best practices when implementing password management systems in production environments. so if FBI comes to you don't blame me
