@@ -17,6 +17,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4"/>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
     <PackageReference Include="System.Security.Claims" Version="4.3.0"/>
+    <PackageReference Include="PostSharp.Patterns.Caching.IMemoryCache" Version="2025.1.5"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PrissPass.Data\PrissPass.Data.csproj"/>

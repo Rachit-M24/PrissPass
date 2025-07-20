@@ -6,6 +6,7 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
@@ -20,7 +21,9 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("your allowed origins here")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials()
+              .WithExposedHeaders("your exposed headers here");
     });
 });
 
@@ -31,7 +34,8 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:SecretKey"]);
+    var jwtKey = builder.Configuration["Jwt:SecretKey"];
+    var key = Encoding.ASCII.GetBytes(jwtKey);
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
@@ -39,6 +43,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuer = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidateAudience = false,
+        ValidAudience = builder.Configuration["Jwt:Audience"],
         ClockSkew = TimeSpan.Zero
     };
 });
@@ -77,8 +82,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseHttpsRedirection();
+app.UseHttpsRedirection(); // Disable HTTPS redirection for development
 app.UseAuthentication();
 app.UseCors("AllowFrontendDev");
 app.UseAuthorization();
