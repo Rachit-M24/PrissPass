@@ -25,7 +25,7 @@ const LoginPage = () => {
     e.preventDefault();
     try {
       await dispatch(loginUser(credentials)).unwrap();
-      navigate("/dashboard");
+      navigate("/dashboard/vault");
     } catch (error) {
       console.error("Login failed:", error);
     }

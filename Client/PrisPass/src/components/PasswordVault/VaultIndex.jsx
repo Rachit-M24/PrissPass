@@ -62,7 +62,6 @@ const VaultIndex = () => {
       url: vaultItems[idx].url || "",
       notes: vaultItems[idx].notes || "",
     });
-    setMasterPassword("");
   };
 
   const handleEditSave = async () => {
