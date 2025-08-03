@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PrissPass.Data.Models.Entity;
 
 public class PrissPassContext : DbContext
 {

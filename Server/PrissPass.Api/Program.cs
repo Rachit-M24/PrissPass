@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using PrissPass.Data.Mapper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,7 +74,11 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
-
+builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddAutoMapper(mcfg =>
+{
+    mcfg.AddProfile<VaultItemMapperProfile>();
+});
 var app = builder.Build();
 
 // Middleware
