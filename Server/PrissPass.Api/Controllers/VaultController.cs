@@ -41,12 +41,12 @@ namespace PrissPass.Api.Controllers
             {
                 var user = _httpContextAccessor.HttpContext?.User;
                 var userIdClaim = user?.FindFirstValue(ClaimTypes.NameIdentifier);
-                
+
                 if (string.IsNullOrEmpty(userIdClaim))
                 {
                     throw new UnauthorizedAccessException("User ID not found in claims.");
                 }
-                
+
                 return Guid.Parse(userIdClaim);
             }
         }
@@ -61,7 +61,7 @@ namespace PrissPass.Api.Controllers
 
                 var vaultItem = _mapper.Map<VaultItem>(request);
                 vaultItem.UserId = UserId;
-                
+
                 // Encrypt the sensitive data
                 vaultItem.SiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
                 vaultItem.EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url ?? string.Empty, userKey);
@@ -223,7 +223,7 @@ namespace PrissPass.Api.Controllers
             }
         }
 
-        private async Task<byte[]> GetUserKey()
+        private Task<byte[]> GetUserKey()
         {
             if (Request.Cookies.TryGetValue("sessionId", out var sessionId))
             {
@@ -234,7 +234,7 @@ namespace PrissPass.Api.Controllers
                         SlidingExpiration = TimeSpan.FromMinutes(30),
                         AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12)
                     });
-                    return cachedKey;
+                    return Task.FromResult(cachedKey);
                 }
             }
 

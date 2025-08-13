@@ -26,12 +26,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
   };
 
   const confirmLogout = async () => {
-    try {
-      await axios.post("/api/Auth/logout");
-    } catch (error) {
-      console.error("Logout API call failed:", error);
-    }
-
+    await axios.post("/api/Auth/logout");
     dispatch(logout());
     navigate("/");
     toast.success("Logged out successfully!");
