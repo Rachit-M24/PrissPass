@@ -1,23 +1,33 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PrissPass.Data.Models.Entity
 {
+    /// <summary>
+    /// Represents an item stored inside a vault.
+    /// </summary>
     public class VaultItem
     {
-        [Key]
+        /// <summary>
+        /// Gets or sets the unique identifier of the vault this item belongs to.
+        /// </summary>
         public Guid VaultId { get; set; } = Guid.NewGuid();
 
-        public string SiteName { get; set; }
+        /// <summary>
+        /// Gets or sets the unique identifier of the item.
+        /// </summary>
+        public Guid ItemId { get; set; }
 
-        public string? EncryptedUrl { get; set; }
+        /// <summary>
+        /// Navigation property for the related item.
+        /// </summary>
+        [ForeignKey("ItemId")]
+        public Items Items { get; set; }
 
-        public string EncryptedPassword { get; set; }
-
-        public string? EncryptedNotes { get; set; }
-
-        // Foreign Key
-        public Guid UserId { get; set; }
-
-        public User User { get; set; }
+        /// <summary>
+        /// Navigation property for the related vault.
+        /// </summary>
+        [ForeignKey("VaultId")]
+        public Vaults Vaults { get; set; }
     }
 }
