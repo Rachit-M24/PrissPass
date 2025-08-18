@@ -5,7 +5,7 @@ namespace PrissPass.Data.Models.Entity
     /// <summary>
     /// Represents an application user in the system.
     /// </summary>
-    public class User
+    public class Users
     {
         /// <summary>
         /// Gets or sets the unique identifier for the user.
@@ -19,12 +19,12 @@ namespace PrissPass.Data.Models.Entity
         public string Username { get; set; }
 
         /// <summary>
-        /// Gets or sets the email of the user.
+        /// Gets or sets the email address of the user.
         /// </summary>
         public string Email { get; set; }
 
         /// <summary>
-        /// Gets or sets the master password of the user.
+        /// Gets or sets the master password of the user (stored in encrypted form).
         /// </summary>
         public string MasterPassword { get; set; }
 
@@ -34,8 +34,18 @@ namespace PrissPass.Data.Models.Entity
         public string PasswordSalt { get; set; }
 
         /// <summary>
-        /// Navigation property for the collection of vault items associated with the user.
+        /// Gets or sets the identifier or name of the entity that created the user record.
         /// </summary>
-        public virtual ICollection<VaultItem> VaultItems { get; set; }
+        public string? CreatedBy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the date and time when the user record was created.
+        /// </summary>
+        public DateTime? CreatedDate { get; set; }
+
+        /// <summary>
+        /// Navigation property for the vault associated with this user.
+        /// </summary>
+        public virtual Vaults? Vaults { get; set; }
     }
 }

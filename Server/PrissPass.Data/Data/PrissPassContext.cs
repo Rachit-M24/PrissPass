@@ -3,8 +3,10 @@ using PrissPass.Data.Models.Entity;
 
 public class PrissPassContext : DbContext
 {
-    public PrissPassContext(DbContextOptions<PrissPassContext> options) : base(options) {}
+    public PrissPassContext(DbContextOptions<PrissPassContext> options) : base(options) { }
 
-    public DbSet<User> Users { get; set; }
-    public DbSet<VaultItem> VaultItems { get; set; }
+    public DbSet<Users> Users { get; set; }
+    public DbSet<Vaults> Vaults { get; set; }
+    public DbSet<Items> Items { get; set; }
+    public DbSet<VaultItem> VaultItem { get; set; }
 }

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using PrissPass.Data.Models.Entity;
 
 
@@ -16,26 +17,26 @@ public class Vaults
     /// <summary>
     /// Gets or sets the date and time when the vault was created.
     /// </summary>
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Gets or sets the date and time representing who created the vault.
-    /// (Currently stored as DateTime, may later be linked to a user.)
+    /// Gets or sets the identifier or name of the entity that created the vault.
     /// </summary>
-    public DateTime CreatedBy { get; set; } = DateTime.UtcNow;
+    public string? CreatedBy { get; set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the user who owns the vault.
+    /// Gets or sets the identifier of the user who owns this vault.
     /// </summary>
     public Guid UserId { get; set; }
     
     /// <summary>
-    /// Navigation property for the collection of vault items within the vault.
+    /// Navigation property for the collection of items stored in this vault.
     /// </summary>
-    public virtual ICollection<VaultItem> VaultItems { get; set; }
+    public virtual ICollection<VaultItem>? VaultItems { get; set; }
 
     /// <summary>
-    /// Navigation property for the user who owns the vault.
+    /// Navigation property for the user who owns this vault.
     /// </summary>
-    public virtual User User { get; set; }
+    [ForeignKey("UserId")]
+    public virtual Users? User { get; set; }
 }
