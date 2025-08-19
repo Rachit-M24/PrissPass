@@ -15,6 +15,11 @@ public class GenericService<T> : IGenericService<T> where T : class
         return await _repository.GetByIdAsync(id);
     }
 
+    public async Task<T> GetByIdWithIncludesAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+    {
+        return await _repository.GetByIdWithIncludesAsync(predicate, includes);
+    }
+
     public async Task<IEnumerable<T>> GetAllAsync()
     {
         return await _repository.GetAllAsync();

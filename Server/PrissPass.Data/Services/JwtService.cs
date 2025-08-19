@@ -19,7 +19,7 @@ public class JwtService
         _expiryInMinutes = int.Parse(configuration["Jwt:ExpiryInMinutes"]);
     }
 
-    public string GenerateToken(User user)
+    public string GenerateToken(Users user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_secretKey);

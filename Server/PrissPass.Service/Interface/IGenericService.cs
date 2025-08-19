@@ -19,7 +19,7 @@ public interface IGenericService<T> where T : class
     /// <param name="id">The unique identifier of the entity.</param>
     /// <param name="predicate">An optional condition to filter the entity.</param>
     /// <param name="includes">Navigation properties to include in the query.</param>
-    Task<T> GetByIdWithIncludesAsync(Guid id, Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
+    Task<T> GetByIdWithIncludesAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
 
     /// <summary>
     /// Retrieves all entities of type <typeparamref name="T"/>.

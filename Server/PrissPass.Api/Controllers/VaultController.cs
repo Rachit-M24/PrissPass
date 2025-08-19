@@ -12,23 +12,29 @@ namespace PrissPass.Api.Controllers
     [Route("api/[controller]")]
     public class VaultController : ControllerBase
     {
-        private readonly IGenericService<VaultItem> _vaultService;
-        private readonly IGenericService<User> _userService;
+        private readonly IGenericService<VaultItem> _vaultItemService;
+        private readonly IGenericService<Users> _userService;
+        private readonly IGenericService<Items> _itemsService;
+        private readonly IGenericService<Vaults> _vaultsService;
         private readonly EncryptionService _encryptionService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMemoryCache _cache;
         private readonly IMapper _mapper;
 
         public VaultController(
-            IGenericService<VaultItem> vaultService,
-            IGenericService<User> userService,
+            IGenericService<VaultItem> vaultItemService,
+            IGenericService<Users> userService,
+            IGenericService<Items> itemsService,
+            IGenericService<Vaults> vaultsService,
             EncryptionService encryptionService,
             IHttpContextAccessor httpContextAccessor,
             IMemoryCache cache,
             IMapper mapper)
         {
-            _vaultService = vaultService;
+            _vaultItemService = vaultItemService;
             _userService = userService;
+            _itemsService = itemsService;
+            _vaultsService = vaultsService;
             _encryptionService = encryptionService;
             _httpContextAccessor = httpContextAccessor;
             _cache = cache;
@@ -59,17 +65,36 @@ namespace PrissPass.Api.Controllers
             {
                 var userKey = await GetUserKey();
 
-                var vaultItem = _mapper.Map<VaultItem>(request);
-                vaultItem.UserId = UserId;
+                // Create a new Items entity with encrypted data
+                var items = new Items
+                {
+                    EncryptedSiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey),
+                    EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url ?? string.Empty, userKey),
+                    EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey),
+                    EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes ?? string.Empty, userKey),
+                    CreatedBy = UserId.ToString(),
+                };
 
-                // Encrypt the sensitive data
-                vaultItem.SiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
-                vaultItem.EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url ?? string.Empty, userKey);
-                vaultItem.EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey);
-                vaultItem.EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes ?? string.Empty, userKey);
+                // Save the Items entity
+                await _itemsService.AddAsync(items);
 
-                await _vaultService.AddAsync(vaultItem);
-                await _vaultService.SaveChangesAsync();
+                // Create or retrieve the user's vault
+                var vault = await _vaultsService.FindAsync(v => v.UserId == UserId);
+                var userVault = vault.FirstOrDefault() ?? new Vaults { UserId = UserId };
+                if (vault.FirstOrDefault() == null)
+                {
+                    await _vaultsService.AddAsync(userVault);
+                }
+
+                // Create VaultItem to link Vault and Items
+                var vaultItem = new VaultItem
+                {
+                    VaultId = userVault.VaultId,
+                    ItemId = items.ItemId
+                };
+
+                await _vaultItemService.AddAsync(vaultItem);
+                await _vaultItemService.SaveChangesAsync();
 
                 return Ok(new { message = "We've securely stored your data, now you can forget your password 🙃." });
             }
@@ -89,20 +114,26 @@ namespace PrissPass.Api.Controllers
         {
             try
             {
-                var existingItem = await _vaultService.GetByIdAsync(vaultId);
-                if (existingItem == null || existingItem.UserId != UserId)
-                    return NotFound(new { message = "Vault item not found." });
+                var vaultItem = await _vaultsService.GetByIdWithIncludesAsync(v => v.VaultId == vaultId, v => v.VaultItems);
+                if (vaultItem == null || vaultItem.UserId != UserId)
+                    return NotFound(new { message = "Vault item not found or not authorized." });
 
                 var userKey = await GetUserKey();
 
+                // Retrieve the associated Items entity
+                var existingItem = await _itemsService.GetByIdAsync(vaultItem.VaultItems.FirstOrDefault()?.ItemId ?? Guid.Empty);
+                if (existingItem == null)
+                    return NotFound(new { message = "Associated item not found." });
+
                 // Update with encrypted data
-                existingItem.SiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
+                existingItem.EncryptedSiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
                 existingItem.EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url ?? string.Empty, userKey);
                 existingItem.EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey);
                 existingItem.EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes ?? string.Empty, userKey);
+                existingItem.ModifiedDate = DateTime.UtcNow;
 
-                await _vaultService.UpdateAsync(existingItem);
-                await _vaultService.SaveChangesAsync();
+                await _itemsService.UpdateAsync(existingItem);
+                await _itemsService.SaveChangesAsync();
 
                 return Ok(new { message = "Vault item updated successfully." });
             }
@@ -122,12 +153,20 @@ namespace PrissPass.Api.Controllers
         {
             try
             {
-                var item = await _vaultService.GetByIdAsync(vaultId);
-                if (item == null || item.UserId != UserId)
+                var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(v => v.VaultId == vaultId, v => v.Vaults, i => i.Items);
+                if (vaultItem == null || vaultItem.Vaults.UserId != UserId)
                     return NotFound(new { message = "Vault item not found or not authorized." });
 
-                await _vaultService.RemoveAsync(item);
-                await _vaultService.SaveChangesAsync();
+                await _vaultItemService.RemoveAsync(vaultItem);
+
+                // Optionally delete the associated Items entity
+                var item = await _itemsService.GetByIdAsync(vaultItem.ItemId);
+                if (item != null)
+                {
+                    await _itemsService.RemoveAsync(item);
+                }
+
+                await _vaultItemService.SaveChangesAsync();
 
                 return Ok(new { message = "Vault item deleted successfully." });
             }
@@ -147,8 +186,8 @@ namespace PrissPass.Api.Controllers
         {
             try
             {
-                var item = await _vaultService.GetByIdAsync(vaultId);
-                if (item == null || item.UserId != UserId)
+                var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(v => v.VaultId == vaultId, v => v.Vaults);
+                if (vaultItem == null || vaultItem.Vaults.UserId != UserId)
                     return NotFound(new { message = "Vault item not found or not authorized." });
 
                 byte[] userKey;
@@ -161,11 +200,16 @@ namespace PrissPass.Api.Controllers
                     userKey = await GetUserKey();
                 }
 
+                // Retrieve the associated Items entity
+                var item = await _itemsService.GetByIdAsync(vaultItem.ItemId);
+                if (item == null)
+                    return NotFound(new { message = "Associated item not found." });
+
                 // Decrypt the data
                 var decryptedItem = new VaultItemResponse
                 {
-                    VaultId = item.VaultId,
-                    SiteName = _encryptionService.DecryptWithUserKey(item.SiteName, userKey),
+                    VaultId = vaultItem.VaultId,
+                    SiteName = _encryptionService.DecryptWithUserKey(item.EncryptedSiteName, userKey),
                     Url = _encryptionService.DecryptWithUserKey(item.EncryptedUrl ?? string.Empty, userKey),
                     Password = _encryptionService.DecryptWithUserKey(item.EncryptedPassword, userKey),
                     Notes = _encryptionService.DecryptWithUserKey(item.EncryptedNotes ?? string.Empty, userKey)
@@ -190,7 +234,7 @@ namespace PrissPass.Api.Controllers
             try
             {
                 byte[] userKey;
-
+                
                 if (!string.IsNullOrEmpty(masterPassword))
                 {
                     userKey = await GetUserKeyWithMasterPassword(masterPassword);
@@ -200,16 +244,24 @@ namespace PrissPass.Api.Controllers
                     userKey = await GetUserKey();
                 }
 
-                var items = await _vaultService.FindAsync(v => v.UserId == UserId);
+                var vaultItems = await _vaultItemService.FindAsync(v => v.Vaults.UserId == UserId);
 
-                var decryptedItems = items.Select(i => new VaultItemResponse
+                var decryptedItems = new List<VaultItemResponse>();
+                foreach (var vaultItem in vaultItems)
                 {
-                    VaultId = i.VaultId,
-                    SiteName = _encryptionService.DecryptWithUserKey(i.SiteName, userKey),
-                    Url = _encryptionService.DecryptWithUserKey(i.EncryptedUrl ?? string.Empty, userKey),
-                    Password = _encryptionService.DecryptWithUserKey(i.EncryptedPassword, userKey),
-                    Notes = _encryptionService.DecryptWithUserKey(i.EncryptedNotes ?? string.Empty, userKey)
-                }).ToList();
+                    var item = await _itemsService.GetByIdAsync(vaultItem.ItemId);
+                    if (item != null)
+                    {
+                        decryptedItems.Add(new VaultItemResponse
+                        {
+                            VaultId = vaultItem.VaultId,
+                            SiteName = _encryptionService.DecryptWithUserKey(item.EncryptedSiteName, userKey),
+                            Url = _encryptionService.DecryptWithUserKey(item.EncryptedUrl ?? string.Empty, userKey),
+                            Password = _encryptionService.DecryptWithUserKey(item.EncryptedPassword, userKey),
+                            Notes = _encryptionService.DecryptWithUserKey(item.EncryptedNotes ?? string.Empty, userKey)
+                        });
+                    }
+                }
 
                 return Ok(decryptedItems);
             }

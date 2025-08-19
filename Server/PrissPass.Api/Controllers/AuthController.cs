@@ -11,13 +11,13 @@ namespace PrissPass.Api.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly IRepository<User> _userRepository;
+        private readonly IRepository<Users> _userRepository;
         private readonly JwtService _jwtService;
         private readonly IMemoryCache _cache;
         private readonly EncryptionService _encryptionService;
 
         public AuthController(
-            IRepository<User> userRepository,
+            IRepository<Users> userRepository,
             JwtService jwtService,
             EncryptionService encryptionService,
             IMemoryCache cache)
@@ -36,7 +36,7 @@ namespace PrissPass.Api.Controllers
                 if (await _userRepository.AnyAsync(u => u.Email == request.Email))
                     return BadRequest(new { message = "Please use a different email" });
 
-                var user = new User
+                var user = new Users
                 {
                     Username = request.Username,
                     Email = request.Email,

@@ -18,6 +18,16 @@ public class Repository<T> : IRepository<T> where T : class
         return await _dbSet.FindAsync(id);
     }
 
+    public async Task<T> GetByIdWithIncludesAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+    {
+        IQueryable<T> query = _dbSet;
+
+        foreach (var include in includes)
+            query = query.Include(include);
+
+        return await query.FirstOrDefaultAsync(predicate);
+    }
+
     public async Task<IEnumerable<T>> GetAllAsync()
     {
         return await _dbSet.ToListAsync();
@@ -63,8 +73,8 @@ public class Repository<T> : IRepository<T> where T : class
 
     public async Task<int> CountAsync(Expression<Func<T, bool>> predicate = null)
     {
-        return predicate == null 
-            ? await _dbSet.CountAsync() 
+        return predicate == null
+            ? await _dbSet.CountAsync()
             : await _dbSet.CountAsync(predicate);
     }
 
