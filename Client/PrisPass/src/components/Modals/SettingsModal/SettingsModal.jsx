@@ -5,13 +5,12 @@ import {
   User,
   Shield,
   Bell,
-  Moon,
-  Sun,
   HelpCircle,
 } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../../redux/slice/AuthSlice/AuthSlice";
+import { toggleTheme } from "../../../redux/slice/themeSlice/ThemeSlice";
 import { toast } from "react-toastify";
 import axios from "../../../utils/axiosConfig";
 
@@ -19,7 +18,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme } = useSelector((state) => state.theme);
 
   const handleLogout = () => {
     setShowLogoutConfirm(true);
@@ -123,14 +122,14 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     Dark Mode
                   </span>
                   <button
-                    onClick={() => setDarkMode(!darkMode)}
+                    onClick={() => dispatch(toggleTheme())}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      darkMode ? "bg-blue-600" : "bg-gray-300"
+                      theme === "dark" ? "bg-blue-600" : "bg-gray-300"
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        darkMode ? "translate-x-6" : "translate-x-1"
+                        theme === "dark" ? "translate-x-6" : "translate-x-1"
                       }`}
                     />
                   </button>
