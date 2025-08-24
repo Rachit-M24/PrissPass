@@ -29,7 +29,7 @@ public interface IRepository<T> where T : class
     /// Finds entities that match the given condition.
     /// </summary>
     /// <param name="predicate">The condition to filter entities.</param>
-    Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
+    Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
 
     /// <summary>
     /// Adds a new entity to the data source.

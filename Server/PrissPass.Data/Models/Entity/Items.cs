@@ -11,7 +11,7 @@ namespace PrissPass.Data.Models.Entity
         /// Gets or sets the unique identifier for the item.
         /// </summary>
         [Key]
-        public Guid ItemId { get; set; } = Guid.NewGuid();
+        public Guid ItemId { get; set; }
         /// <summary>
         /// Gets or sets the encrypted name of the site or service associated with the item.
         /// </summary>

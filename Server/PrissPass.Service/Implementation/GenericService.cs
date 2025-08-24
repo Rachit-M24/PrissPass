@@ -25,9 +25,9 @@ public class GenericService<T> : IGenericService<T> where T : class
         return await _repository.GetAllAsync();
     }
 
-    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
     {
-        return await _repository.FindAsync(predicate);
+        return await _repository.FindAsync(predicate,includes);
     }
 
     public async Task AddAsync(T entity)
