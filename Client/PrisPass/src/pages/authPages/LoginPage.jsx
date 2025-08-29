@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect }   from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useFormValidation } from "../../components/customHooks/useFormValifdation";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -16,25 +17,31 @@ const LoginPage = () => {
     (state) => state.auth
   );
   const [showPassword, setShowPassword] = useState(false);
-  const [credentials, setCredentials] = useState({
+  const initialState = {
     email: "",
     masterPassword: "",
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCredentials((prev) => ({ ...prev, [name]: value }));
   };
+
+  const {
+    formData: credentials,
+    errors,
+    handleChange,
+    validateFormData,
+  } = useFormValidation(initialState);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    console.log('Current validation errors:', errors);
+    console.log('Form data:', credentials);
+
     try {
       await dispatch(loginUser(credentials)).unwrap();
       navigate("/dashboard/vault");
     } catch (error) {
       console.error("Login failed:", error);
     }
-  };
+  }
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -57,7 +64,7 @@ const LoginPage = () => {
             Welcome O_O
           </CardTitle>
           <p className="text-center text-sm text-white/70 mt-1">
-            Look!! who forgot  their password again
+            Look!! who forgot their password again
           </p>
         </CardHeader>
         <CardContent className="p-6 relative z-10">
@@ -85,8 +92,13 @@ const LoginPage = () => {
                 value={credentials.email}
                 onChange={handleChange}
                 placeholder="you@example.com"
-                className="w-full rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 hover:bg-white/15"
+                className={`w-full rounded-xl bg-white/10 backdrop-blur-sm border text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 hover:bg-white/15 ${
+                  errors.email ? "border-red-400" : "border-white/20"
+                }`}
               />
+              {errors.email && (
+                <span className="text-sm text-red-400">{errors.email}</span>
+              )}
             </div>
             <div className="space-y-2 relative">
               <Label
@@ -103,8 +115,15 @@ const LoginPage = () => {
                 value={credentials.masterPassword}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full  text-align-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 hover:bg-white/15"
+                className={`w-full rounded-xl bg-white/10 backdrop-blur-sm border text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 hover:bg-white/15 ${
+                  errors.masterPassword ? "border-red-400" : "border-white/20"
+                }`}
               />
+              {errors.masterPassword && (
+                <span className="text-sm text-red-400">
+                  {errors.masterPassword}
+                </span>
+              )}
               <div
                 className="absolute top-10 right-3 text-white/60 cursor-pointer hover:text-blue-300 transition-colors"
                 onClick={() => setShowPassword((prev) => !prev)}
@@ -114,7 +133,7 @@ const LoginPage = () => {
             </div>
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !credentials.email || !credentials.masterPassword}
               className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl font-medium shadow-lg shadow-blue-500/25 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed backdrop-blur-sm border border-blue-400/20"
             >
               {loading ? "Signing In..." : "Sign In"}

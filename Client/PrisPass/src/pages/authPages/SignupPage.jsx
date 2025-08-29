@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { registerUser } from "../../redux/slice/AuthSlice/AuthSlice";
+import { useFormValidation } from "../../components/customHooks/useFormValifdation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,19 +17,25 @@ const SignupPage = () => {
     (state) => state.auth
   );
   const [showPassword, setShowPassword] = useState(false);
-  const [user, setUser] = useState({
+  const initialState = {
     username: "",
     email: "",
     masterPassword: "",
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setUser((prev) => ({ ...prev, [name]: value }));
   };
+
+  const {
+    formData: user,
+    errors,
+    handleChange,
+    validateFormData,
+  } = useFormValidation(initialState);
 
   const handleRegister = async (e) => {
     e.preventDefault();
+
+    if (!validateFormData()) {
+      return;
+    }
 
     try {
       await dispatch(
@@ -84,8 +91,13 @@ const SignupPage = () => {
                 value={user.username}
                 onChange={handleChange}
                 placeholder="Your Name"
-                className="w-full rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 hover:bg-white/15"
+                className={`w-full rounded-xl bg-white/10 backdrop-blur-sm border text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 hover:bg-white/15 ${
+                  errors.username ? "border-red-400" : "border-white/20"
+                }`}
               />
+              {errors.username && (
+                <span className="text-sm text-red-400">{errors.username}</span>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium text-white/90">
@@ -99,8 +111,13 @@ const SignupPage = () => {
                 value={user.email}
                 onChange={handleChange}
                 placeholder="skibiddi@example.com"
-                className="w-full rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 hover:bg-white/15"
+                className={`w-full rounded-xl bg-white/10 backdrop-blur-sm border text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 hover:bg-white/15 ${
+                  errors.email ? "border-red-400" : "border-white/20"
+                }`}
               />
+              {errors.email && (
+                <span className="text-sm text-red-400">{errors.email}</span>
+              )}
             </div>
             <div className="space-y-2 relative">
               <Label htmlFor="masterPassword" className="text-sm font-medium text-white/90">
@@ -114,8 +131,13 @@ const SignupPage = () => {
                 value={user.masterPassword}
                 onChange={handleChange}
                 placeholder="Create a strong one 💪"
-                className="w-full rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 hover:bg-white/15"
+                className={`w-full rounded-xl bg-white/10 backdrop-blur-sm border text-white placeholder:text-white/50 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 hover:bg-white/15 ${
+                  errors.masterPassword ? "border-red-400" : "border-white/20"
+                }`}
               />
+              {errors.masterPassword && (
+                <span className="text-sm text-red-400">{errors.masterPassword}</span>
+              )}
               <div
                 className="absolute top-10 right-3 text-white/60 cursor-pointer hover:text-blue-300 transition-colors"
                 onClick={() => setShowPassword((prev) => !prev)}

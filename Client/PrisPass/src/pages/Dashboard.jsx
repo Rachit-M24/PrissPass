@@ -9,7 +9,7 @@ const DashboardPage = () => {
 
       {/* Main Content */}
       <main className="flex-1 lg:ml-0 overflow-y-auto">
-        <div className="lg:p-6 pt-20 lg:pt-6">
+        <div className="px-2">
           <Outlet />
         </div>
       </main>
