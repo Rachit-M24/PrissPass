@@ -295,7 +295,9 @@ namespace PrissPass.Api.Controllers
                     SiteName = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedSiteName, userKey),
                     Url = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedUrl ?? string.Empty, userKey),
                     Password = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedPassword, userKey),
-                    Notes = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedNotes ?? string.Empty, userKey)
+                    Notes = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedNotes ?? string.Empty, userKey),
+                    CreatedDate = vaultItem.Items.CreatedDate,
+                    ModifiedDate = vaultItem.Items.ModifiedDate
                 }).ToList();
 
                 return Ok(decryptedItems);
