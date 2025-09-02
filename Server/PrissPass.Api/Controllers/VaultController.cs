@@ -69,7 +69,22 @@ namespace PrissPass.Api.Controllers
             {
                 if (request == null)
                 {
-                    return BadRequest(new { message = "Invalid request data" });
+                    return BadRequest(new { message = "Invalid request data", code = "INVALID_REQUEST" });
+                }
+
+                if (string.IsNullOrWhiteSpace(request.SiteName))
+                {
+                    return BadRequest(new { message = "Site name is required", code = "MISSING_SITE_NAME" });
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Password))
+                {
+                    return BadRequest(new { message = "Password is required", code = "MISSING_PASSWORD" });
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.Url) && !Uri.TryCreate(request.Url, UriKind.Absolute, out _))
+                {
+                    return BadRequest(new { message = "Invalid URL format", code = "INVALID_URL" });
                 }
 
                 var userKey = await GetUserEncryptionKeyAsync(null);
@@ -111,12 +126,22 @@ namespace PrissPass.Api.Controllers
             catch (DbUpdateException ex)
             {
                 _logger.LogError(ex, "Database error occurred while adding a vault item for user {UserId}.", UserId);
-                return StatusCode(500, new { message = "A database error occurred while saving the item." });
+                return StatusCode(500, new { message = "A database error occurred while saving the item.", code = "DB_ERROR" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access attempt in AddItem for user {UserId}.", UserId);
+                return Unauthorized(new { message = ex.Message, code = "UNAUTHORIZED" });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid argument in AddItem for user {UserId}.", UserId);
+                return BadRequest(new { message = ex.Message, code = "INVALID_ARGUMENT" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred in AddItem for user {UserId}.", UserId);
-                return StatusCode(500, new { message = "An unexpected error occurred." });
+                return StatusCode(500, new { message = "An unexpected error occurred.", code = "INTERNAL_ERROR" });
             }
         }
 
@@ -128,9 +153,19 @@ namespace PrissPass.Api.Controllers
         {
             try
             {
+                if (vaultItemId == Guid.Empty)
+                {
+                    return BadRequest(new { message = "Invalid vault item ID", code = "INVALID_ID" });
+                }
+
                 if (request == null)
                 {
-                    return BadRequest(new { message = "Invalid request data" });
+                    return BadRequest(new { message = "Invalid request data", code = "INVALID_REQUEST" });
+                }
+
+                if (string.IsNullOrWhiteSpace(request.SiteName) || string.IsNullOrWhiteSpace(request.Password))
+                {
+                    return BadRequest(new { message = "Site name and password are required", code = "MISSING_REQUIRED_FIELDS" });
                 }
 
                 var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(
@@ -164,12 +199,22 @@ namespace PrissPass.Api.Controllers
             catch (DbUpdateException ex)
             {
                 _logger.LogError(ex, "Database error occurred while updating vault item {VaultItemId} for user {UserId}.", vaultItemId, UserId);
-                return StatusCode(500, new { message = "A database error occurred while updating the item." });
+                return StatusCode(500, new { message = "A database error occurred while updating the item.", code = "DB_ERROR" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access attempt in UpdateItem for user {UserId}.", UserId);
+                return Unauthorized(new { message = ex.Message, code = "UNAUTHORIZED" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Invalid operation in UpdateItem for user {UserId}.", UserId);
+                return BadRequest(new { message = ex.Message, code = "INVALID_OPERATION" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred in UpdateItem for user {UserId}.", UserId);
-                return StatusCode(500, new { message = "An unexpected error occurred." });
+                return StatusCode(500, new { message = "An unexpected error occurred.", code = "INTERNAL_ERROR" });
             }
         }
 
@@ -182,6 +227,10 @@ namespace PrissPass.Api.Controllers
         {
             try
             {
+                if (vaultItemId == Guid.Empty)
+                {
+                    return BadRequest(new { message = "Invalid vault item ID", code = "INVALID_ID" });
+                }
                 var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(
                     vi => vi.VaultItemId == vaultItemId && vi.Vaults.UserId == UserId,
                     v => v.Vaults,
@@ -218,6 +267,10 @@ namespace PrissPass.Api.Controllers
         {
             try
             {
+                if (vaultItemId == Guid.Empty)
+                {
+                    return BadRequest(new { message = "Invalid vault item ID", code = "INVALID_ID" });
+                }
                 var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(vi => vi.VaultItemId == vaultItemId, v => v.Vaults, i => i.Items);
 
                 if (vaultItem == null || vaultItem.Vaults.UserId != UserId)
@@ -243,10 +296,15 @@ namespace PrissPass.Api.Controllers
 
                 return Ok(decryptedItem);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access attempt in GetVaultItemById for user {UserId}.", UserId);
+                return Unauthorized(new { message = ex.Message, code = "UNAUTHORIZED" });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred in GetVaultItemById for user {UserId}.", UserId);
-                return StatusCode(500, new { message = "An unexpected error occurred." });
+                return StatusCode(500, new { message = "An unexpected error occurred.", code = "INTERNAL_ERROR" });
             }
         }
 

@@ -29,7 +29,6 @@ const VaultIndex = () => {
   const dispatch = useDispatch();
   const vaultItems = useSelector((state) => state.vault.vaultItems ?? []);
   const loading = useSelector((state) => state.vault.loading);
-  const selectedItem = useSelector((state) => state.vault.selectedItem);
 
   useEffect(() => {
     dispatch(fetchVaultItems())
@@ -100,21 +99,21 @@ const VaultIndex = () => {
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     item: null,
-    vaultId: null
+    vaultId: null,
   });
 
   const handleDelete = async (vaultId) => {
-    const item = vaultItems.find(item => item.vaultId === vaultId);
+    const item = vaultItems.find((item) => item.vaultId === vaultId);
     setDeleteModal({
       isOpen: true,
       item,
-      vaultId // Store the vaultId explicitly
+      vaultId, // Store the vaultId explicitly
     });
   };
 
   const confirmDelete = async () => {
     if (!deleteModal.vaultId) {
-      console.error('No vaultId provided for deletion');
+      console.error("No vaultId provided for deletion");
       return;
     }
 
@@ -179,8 +178,8 @@ const VaultIndex = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="max-w-7xl mx-auto p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="max-w-7xl mx-auto p-4 bg-white/50 dark:bg-gray-900/50 shadow-lg rounded-lg backdrop-blur-sm border border-gray-200 dark:border-gray-700">
         {/* Header Section - Keep existing header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -211,7 +210,7 @@ const VaultIndex = () => {
           {/* Search Bar - Keep existing search */}
           <div className="relative max-w-md">
             <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
               size={20}
             />
             <input
@@ -219,7 +218,7 @@ const VaultIndex = () => {
               placeholder="Search passwords..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white/80 dark:bg-gray-800/80 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
             />
           </div>
         </div>
@@ -273,7 +272,7 @@ const VaultIndex = () => {
         item={modalConfig.item}
         vaultId={modalConfig.vaultId}
       />
-      
+
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, item: null, vaultId: null })}

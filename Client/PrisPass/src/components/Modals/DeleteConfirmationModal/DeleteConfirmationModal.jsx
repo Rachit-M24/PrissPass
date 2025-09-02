@@ -6,12 +6,15 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, itemName }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm transition-all duration-300">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
         <div className="p-6">
           <div className="flex items-center gap-4 mb-6">
             <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-full">
-              <AlertTriangle className="text-red-600 dark:text-red-500" size={24} />
+              <AlertTriangle
+                className="text-red-600 dark:text-red-500"
+                size={24}
+              />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -27,8 +30,8 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, itemName }) => {
             </div>
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            This action cannot be undone. This will permanently delete the password
-            from your vault.
+            This action cannot be undone. This will permanently delete the
+            password from your vault.
           </div>
           <div className="flex gap-3">
             <Button

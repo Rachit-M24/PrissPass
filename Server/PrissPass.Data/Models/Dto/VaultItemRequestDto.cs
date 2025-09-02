@@ -10,7 +10,7 @@ namespace PrissPass.Data.Models.Dto
         public string? Url { get; set; }
 
         [Required(ErrorMessage = "Please enter the password.")]
-        [StringLength(100, MinimumLength = 8)]
+        [StringLength(100)]
         public string Password { get; set; }
 
         public string? Notes { get; set; }
