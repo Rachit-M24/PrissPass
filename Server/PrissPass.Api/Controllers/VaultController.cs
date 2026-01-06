@@ -12,7 +12,7 @@ namespace PrissPass.Api.Controllers
     [ApiController]
     [Authorize]
     [Route("api/[controller]")]
-    public class VaultController : ControllerBase
+    public class VaultController : BaseController
     {
         private readonly IGenericService<VaultItem> _vaultItemService;
         private readonly IGenericService<Users> _userService;
@@ -96,17 +96,14 @@ namespace PrissPass.Api.Controllers
                 var userVault = await GetOrCreateUserVaultAsync();
                 await _vaultsService.SaveChangesAsync();
 
-                // Map the request to Items entity
                 var newItem = _mapper.Map<Items>(request);
                 newItem.CreatedBy = UserId.ToString();
 
-                // Encrypt the sensitive data
                 newItem.EncryptedSiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
                 newItem.EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url ?? string.Empty, userKey);
                 newItem.EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey);
                 newItem.EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes ?? string.Empty, userKey);
 
-                // Map and create VaultItem
                 var vaultItem = _mapper.Map<VaultItem>(request);
                 vaultItem.VaultId = userVault.VaultId;
                 vaultItem.ItemId = newItem.ItemId;
@@ -243,7 +240,7 @@ namespace PrissPass.Api.Controllers
                 await _itemsService.RemoveAsync(vaultItem.Items);
                 await _itemsService.SaveChangesAsync();
 
-                _cache.Remove($"vault_items_{UserId}"); // Clear cache for this user's items
+                _cache.Remove($"vault_items_{UserId}");
 
                 return Ok();
             }
@@ -325,10 +322,8 @@ namespace PrissPass.Api.Controllers
                 string cacheKey = $"vault_items_{UserId}";
                 List<VaultItem>? vaultItems = null;
 
-                // Try to get items from cache first
                 if (!_cache.TryGetValue(cacheKey, out vaultItems) || vaultItems == null)
                 {
-                    // If not in cache or null, fetch from database with optimized query
                     vaultItems = (await _vaultItemService.FindAsync(
                         v => v.Vaults.UserId == UserId,
                         v => v.Vaults,
@@ -337,14 +332,12 @@ namespace PrissPass.Api.Controllers
 
                     if (vaultItems.Any())
                     {
-                        // Only cache if we have items
                         var cacheOptions = new MemoryCacheEntryOptions()
                             .SetSlidingExpiration(TimeSpan.FromMinutes(5));
                         _cache.Set(cacheKey, vaultItems, cacheOptions);
                     }
                 }
 
-                // Ensure we have a non-null list even if empty
                 vaultItems ??= new List<VaultItem>();
 
                 var decryptedItems = vaultItems.Select(vaultItem => new VaultItemResponse
@@ -374,7 +367,6 @@ namespace PrissPass.Api.Controllers
         {
             string cacheKey = $"user_vault_{UserId}";
 
-            // Try to get from cache first
             if (_cache.TryGetValue(cacheKey, out Vaults? userVault) && userVault != null)
             {
                 return userVault;
@@ -409,7 +401,6 @@ namespace PrissPass.Api.Controllers
         /// <returns>The user key as a byte array, or null if unauthorized or session expired.</returns>
         private async Task<byte[]?> GetUserEncryptionKeyAsync(string? masterPassword)
         {
-            // If master password is provided, always use it to re-derive the key and reset the session.
             if (!string.IsNullOrEmpty(masterPassword))
             {
                 var user = await _userService.GetByIdAsync(UserId);
@@ -422,7 +413,6 @@ namespace PrissPass.Api.Controllers
 
                 var userKey = _encryptionService.DeriveUserKey(masterPassword, user.PasswordSalt);
 
-                // Create a new session
                 var newSessionId = Guid.NewGuid().ToString();
                 var cacheOptions = new MemoryCacheEntryOptions
                 {
@@ -442,10 +432,8 @@ namespace PrissPass.Api.Controllers
                 return userKey;
             }
 
-            // If no master password, try to get the key from the cached session.
             if (Request.Cookies.TryGetValue("sessionId", out var sessionId) && _cache.TryGetValue(sessionId, out byte[]? cachedKey))
             {
-                // Extend the session sliding expiration on activity
                 _cache.Set(sessionId, cachedKey, new MemoryCacheEntryOptions
                 {
                     SlidingExpiration = TimeSpan.FromMinutes(30),

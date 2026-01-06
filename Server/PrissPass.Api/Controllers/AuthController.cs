@@ -9,7 +9,7 @@ namespace PrissPass.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController : BaseController
     {
         private readonly IRepository<Users> _userRepository;
         private readonly JwtService _jwtService;
@@ -81,11 +81,11 @@ namespace PrissPass.Api.Controllers
 
                 SetAuthCookies(token, sessionId);
 
-                return Ok(new { 
+                return Ok(new
+                {
                     message = "Login successful",
-                    token = token,
-                    sessionId = sessionId,
-                    user = new { 
+                    user = new
+                    {
                         userId = user.UserId,
                         username = user.Username,
                         email = user.Email
@@ -110,7 +110,7 @@ namespace PrissPass.Api.Controllers
 
                 Response.Cookies.Delete("token");
                 Response.Cookies.Delete("sessionId");
-                
+
                 return Ok(new { message = "Logged out successfully" });
             }
             catch (Exception)
@@ -126,7 +126,8 @@ namespace PrissPass.Api.Controllers
             try
             {
                 var user = HttpContext.User;
-                return Ok(new { 
+                return Ok(new
+                {
                     message = "Authentication successful",
                     userId = user.FindFirstValue(ClaimTypes.NameIdentifier),
                     email = user.FindFirstValue(ClaimTypes.Email),
@@ -152,8 +153,8 @@ namespace PrissPass.Api.Controllers
             Response.Cookies.Append("sessionId", sessionId, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = false, 
-                SameSite = SameSiteMode.Lax, 
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
                 Expires = DateTime.UtcNow.AddMinutes(30)
             });
         }
