@@ -5,14 +5,13 @@ using Microsoft.Extensions.Caching.Memory;
 using AutoMapper;
 using PrissPass.Data.Models.Dto;
 using PrissPass.Data.Models.Entity;
-using Microsoft.EntityFrameworkCore; // Required for DbUpdateException
 
 namespace PrissPass.Api.Controllers
 {
     [ApiController]
     [Authorize]
     [Route("api/[controller]")]
-    public class VaultController : BaseController
+    public class VaultController : ControllerBase
     {
         private readonly IGenericService<VaultItem> _vaultItemService;
         private readonly IGenericService<Users> _userService;
@@ -65,81 +64,47 @@ namespace PrissPass.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> AddItem([FromBody] VaultItemRequest request)
         {
-            try
-            {
-                if (request == null)
-                {
-                    return BadRequest(new { message = "Invalid request data", code = "INVALID_REQUEST" });
-                }
+            if (request == null)
+                throw new ArgumentNullException(nameof(request), "Invalid request data");
 
-                if (string.IsNullOrWhiteSpace(request.SiteName))
-                {
-                    return BadRequest(new { message = "Site name is required", code = "MISSING_SITE_NAME" });
-                }
+            if (string.IsNullOrWhiteSpace(request.SiteName))
+                throw new ArgumentException("Site name is required");
 
-                if (string.IsNullOrWhiteSpace(request.Password))
-                {
-                    return BadRequest(new { message = "Password is required", code = "MISSING_PASSWORD" });
-                }
+            if (string.IsNullOrWhiteSpace(request.Password))
+                throw new ArgumentException("Password is required");
 
-                if (!string.IsNullOrWhiteSpace(request.Url) && !Uri.TryCreate(request.Url, UriKind.Absolute, out _))
-                {
-                    return BadRequest(new { message = "Invalid URL format", code = "INVALID_URL" });
-                }
+            if (!string.IsNullOrWhiteSpace(request.Url) && !Uri.TryCreate(request.Url, UriKind.Absolute, out _))
+                throw new ArgumentException("Invalid URL format");
 
-                var userKey = await GetUserEncryptionKeyAsync(null);
-                if (userKey == null)
-                {
-                    return Unauthorized(new { message = "Session expired. Please provide the master password." });
-                }
+            var userKey = await GetUserEncryptionKeyAsync(null);
+            if (userKey == null)
+                throw new UnauthorizedAccessException("Session expired. Please provide the master password.");
 
-                var userVault = await GetOrCreateUserVaultAsync();
-                await _vaultsService.SaveChangesAsync();
+            var userVault = await GetOrCreateUserVaultAsync();
+            await _vaultsService.SaveChangesAsync();
 
-                var newItem = _mapper.Map<Items>(request);
-                newItem.CreatedBy = UserId.ToString();
+            var newItem = _mapper.Map<Items>(request);
+            newItem.CreatedBy = UserId.ToString();
 
-                newItem.EncryptedSiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
-                newItem.EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url ?? string.Empty, userKey);
-                newItem.EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey);
-                newItem.EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes ?? string.Empty, userKey);
+            newItem.EncryptedSiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
+            newItem.EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url ?? string.Empty, userKey);
+            newItem.EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey);
+            newItem.EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes ?? string.Empty, userKey);
 
-                var vaultItem = _mapper.Map<VaultItem>(request);
-                vaultItem.VaultId = userVault.VaultId;
-                vaultItem.ItemId = newItem.ItemId;
+            var vaultItem = _mapper.Map<VaultItem>(request);
+            vaultItem.VaultId = userVault.VaultId;
+            vaultItem.ItemId = newItem.ItemId;
+            await _itemsService.AddAsync(newItem);
+            await _vaultItemService.AddAsync(vaultItem);
+            await _vaultItemService.SaveChangesAsync();
 
-                await _itemsService.AddAsync(newItem);
-                await _vaultItemService.AddAsync(vaultItem);
-                await _vaultItemService.SaveChangesAsync();
+            var response = _mapper.Map<VaultItemResponse>(vaultItem);
 
-                var response = _mapper.Map<VaultItemResponse>(vaultItem);
+            _cache.Remove($"vault_items_{UserId}");
 
-                _cache.Remove($"vault_items_{UserId}");
-
-                return CreatedAtAction(nameof(GetVaultItemById),
-                    new { vaultItemId = vaultItem.VaultItemId },
-                    response);
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Database error occurred while adding a vault item for user {UserId}.", UserId);
-                return StatusCode(500, new { message = "A database error occurred while saving the item.", code = "DB_ERROR" });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogWarning(ex, "Unauthorized access attempt in AddItem for user {UserId}.", UserId);
-                return Unauthorized(new { message = ex.Message, code = "UNAUTHORIZED" });
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invalid argument in AddItem for user {UserId}.", UserId);
-                return BadRequest(new { message = ex.Message, code = "INVALID_ARGUMENT" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred in AddItem for user {UserId}.", UserId);
-                return StatusCode(500, new { message = "An unexpected error occurred.", code = "INTERNAL_ERROR" });
-            }
+            return CreatedAtAction(nameof(GetVaultItemById),
+                new { vaultItemId = vaultItem.VaultItemId },
+                response);
         }
 
         /// <summary>
@@ -148,71 +113,39 @@ namespace PrissPass.Api.Controllers
         [HttpPut("{vaultItemId}")]
         public async Task<IActionResult> UpdateItem(Guid vaultItemId, [FromBody] VaultItemRequest request)
         {
-            try
-            {
-                if (vaultItemId == Guid.Empty)
-                {
-                    return BadRequest(new { message = "Invalid vault item ID", code = "INVALID_ID" });
-                }
+            if (vaultItemId == Guid.Empty)
+                throw new ArgumentException("Invalid vault item ID");
 
-                if (request == null)
-                {
-                    return BadRequest(new { message = "Invalid request data", code = "INVALID_REQUEST" });
-                }
+            if (request == null)
+                throw new ArgumentNullException(nameof(request), "Invalid request data");
 
-                if (string.IsNullOrWhiteSpace(request.SiteName) || string.IsNullOrWhiteSpace(request.Password))
-                {
-                    return BadRequest(new { message = "Site name and password are required", code = "MISSING_REQUIRED_FIELDS" });
-                }
+            if (string.IsNullOrWhiteSpace(request.SiteName) || string.IsNullOrWhiteSpace(request.Password))
+                throw new ArgumentException("Site name and password are required");
 
-                var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(
-                    vi => vi.VaultItemId == vaultItemId && vi.Vaults.UserId == UserId,
-                    v => v.Vaults,
-                    i => i.Items);
+            var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(
+                vi => vi.VaultItemId == vaultItemId && vi.Vaults.UserId == UserId,
+                v => v.Vaults,
+                i => i.Items);
 
-                if (vaultItem == null)
-                {
-                    return NotFound(new { message = "Vault item not found or you do not have permission to access it." });
-                }
+            if (vaultItem == null)
+                throw new KeyNotFoundException("Vault item not found or you do not have permission to access it.");
 
-                var userKey = await GetUserEncryptionKeyAsync(null);
-                if (userKey == null)
-                {
-                    return Unauthorized(new { message = "Session expired. Please provide the master password." });
-                }
-                var existingItem = vaultItem.Items;
-                existingItem.EncryptedSiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
-                existingItem.EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url ?? string.Empty, userKey);
-                existingItem.EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey);
-                existingItem.EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes ?? string.Empty, userKey);
-                existingItem.ModifiedDate = DateTime.UtcNow;
+            var userKey = await GetUserEncryptionKeyAsync(null);
+            if (userKey == null)
+                throw new UnauthorizedAccessException("Session expired. Please provide the master password.");
 
-                await _itemsService.UpdateAsync(existingItem);
-                await _itemsService.SaveChangesAsync();
-                _cache.Remove($"vault_items_{UserId}");
+            var existingItem = vaultItem.Items;
+            existingItem.EncryptedSiteName = _encryptionService.EncryptWithUserKey(request.SiteName, userKey);
+            existingItem.EncryptedUrl = _encryptionService.EncryptWithUserKey(request.Url ?? string.Empty, userKey);
+            existingItem.EncryptedPassword = _encryptionService.EncryptWithUserKey(request.Password, userKey);
+            existingItem.EncryptedNotes = _encryptionService.EncryptWithUserKey(request.Notes ?? string.Empty, userKey);
+            existingItem.ModifiedDate = DateTime.UtcNow;
 
-                return Ok(new { message = "Vault item updated successfully." });
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Database error occurred while updating vault item {VaultItemId} for user {UserId}.", vaultItemId, UserId);
-                return StatusCode(500, new { message = "A database error occurred while updating the item.", code = "DB_ERROR" });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogWarning(ex, "Unauthorized access attempt in UpdateItem for user {UserId}.", UserId);
-                return Unauthorized(new { message = ex.Message, code = "UNAUTHORIZED" });
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "Invalid operation in UpdateItem for user {UserId}.", UserId);
-                return BadRequest(new { message = ex.Message, code = "INVALID_OPERATION" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred in UpdateItem for user {UserId}.", UserId);
-                return StatusCode(500, new { message = "An unexpected error occurred.", code = "INTERNAL_ERROR" });
-            }
+            await _itemsService.UpdateAsync(existingItem);
+            await _itemsService.SaveChangesAsync();
+            _cache.Remove($"vault_items_{UserId}");
+
+            return Ok(new { message = "Vault item updated successfully." });
         }
 
         /// <summary>
@@ -222,38 +155,23 @@ namespace PrissPass.Api.Controllers
         [HttpDelete("{vaultItemId}")]
         public async Task<IActionResult> DeleteItem(Guid vaultItemId)
         {
-            try
-            {
-                if (vaultItemId == Guid.Empty)
-                {
-                    return BadRequest(new { message = "Invalid vault item ID", code = "INVALID_ID" });
-                }
-                var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(
-                    vi => vi.VaultItemId == vaultItemId && vi.Vaults.UserId == UserId,
-                    v => v.Vaults,
-                    i => i.Items);
+            if (vaultItemId == Guid.Empty)
+                throw new ArgumentException("Invalid vault item ID");
 
-                if (vaultItem == null)
-                {
-                    return NotFound(new { message = "Vault item not found or you do not have permission to access it." });
-                }
-                await _itemsService.RemoveAsync(vaultItem.Items);
-                await _itemsService.SaveChangesAsync();
+            var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(
+                vi => vi.VaultItemId == vaultItemId && vi.Vaults.UserId == UserId,
+                v => v.Vaults,
+                i => i.Items);
 
-                _cache.Remove($"vault_items_{UserId}");
+            if (vaultItem == null)
+                throw new KeyNotFoundException("Vault item not found or you do not have permission to access it.");
 
-                return Ok();
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Database error occurred while deleting vault item {VaultItemId} for user {UserId}.", vaultItemId, UserId);
-                return StatusCode(500, new { message = "A database error occurred while deleting the item." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred in DeleteItem for user {UserId}.", UserId);
-                return StatusCode(500, new { message = "An unexpected error occurred." });
-            }
+            await _itemsService.RemoveAsync(vaultItem.Items);
+            await _itemsService.SaveChangesAsync();
+
+            _cache.Remove($"vault_items_{UserId}");
+
+            return Ok();
         }
 
         /// <summary>
@@ -262,47 +180,29 @@ namespace PrissPass.Api.Controllers
         [HttpGet("{vaultItemId}")]
         public async Task<IActionResult> GetVaultItemById(Guid vaultItemId, [FromQuery] string? masterPassword = null)
         {
-            try
+            if (vaultItemId == Guid.Empty)
+                throw new ArgumentException("Invalid vault item ID");
+
+            var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(vi => vi.VaultItemId == vaultItemId, v => v.Vaults, i => i.Items);
+
+            if (vaultItem == null || vaultItem.Vaults.UserId != UserId)
+                throw new KeyNotFoundException("Vault item not found or you do not have permission to access it.");
+
+            var userKey = await GetUserEncryptionKeyAsync(masterPassword);
+            if (userKey == null)
+                throw new UnauthorizedAccessException("Session expired or master password is required.");
+
+            var item = vaultItem.Items;
+            var decryptedItem = new VaultItemResponse
             {
-                if (vaultItemId == Guid.Empty)
-                {
-                    return BadRequest(new { message = "Invalid vault item ID", code = "INVALID_ID" });
-                }
-                var vaultItem = await _vaultItemService.GetByIdWithIncludesAsync(vi => vi.VaultItemId == vaultItemId, v => v.Vaults, i => i.Items);
+                VaultItemId = vaultItem.VaultItemId,
+                SiteName = _encryptionService.DecryptWithUserKey(item.EncryptedSiteName, userKey),
+                Url = _encryptionService.DecryptWithUserKey(item.EncryptedUrl ?? string.Empty, userKey),
+                Password = _encryptionService.DecryptWithUserKey(item.EncryptedPassword, userKey),
+                Notes = _encryptionService.DecryptWithUserKey(item.EncryptedNotes ?? string.Empty, userKey)
+            };
 
-                if (vaultItem == null || vaultItem.Vaults.UserId != UserId)
-                {
-                    return NotFound(new { message = "Vault item not found or you do not have permission to access it." });
-                }
-
-                var userKey = await GetUserEncryptionKeyAsync(masterPassword);
-                if (userKey == null)
-                {
-                    return Unauthorized(new { message = "Session expired or master password is required." });
-                }
-
-                var item = vaultItem.Items;
-                var decryptedItem = new VaultItemResponse
-                {
-                    VaultItemId = vaultItem.VaultItemId,
-                    SiteName = _encryptionService.DecryptWithUserKey(item.EncryptedSiteName, userKey),
-                    Url = _encryptionService.DecryptWithUserKey(item.EncryptedUrl ?? string.Empty, userKey),
-                    Password = _encryptionService.DecryptWithUserKey(item.EncryptedPassword, userKey),
-                    Notes = _encryptionService.DecryptWithUserKey(item.EncryptedNotes ?? string.Empty, userKey)
-                };
-
-                return Ok(decryptedItem);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogWarning(ex, "Unauthorized access attempt in GetVaultItemById for user {UserId}.", UserId);
-                return Unauthorized(new { message = ex.Message, code = "UNAUTHORIZED" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred in GetVaultItemById for user {UserId}.", UserId);
-                return StatusCode(500, new { message = "An unexpected error occurred.", code = "INTERNAL_ERROR" });
-            }
+            return Ok(decryptedItem);
         }
 
         /// <summary>
@@ -311,53 +211,43 @@ namespace PrissPass.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllItems([FromQuery] string? masterPassword = null)
         {
-            try
+            var userKey = await GetUserEncryptionKeyAsync(masterPassword);
+            if (userKey == null)
+                throw new UnauthorizedAccessException("Session expired or master password is required.");
+
+            string cacheKey = $"vault_items_{UserId}";
+            List<VaultItem>? vaultItems = null;
+
+            if (!_cache.TryGetValue(cacheKey, out vaultItems) || vaultItems == null)
             {
-                var userKey = await GetUserEncryptionKeyAsync(masterPassword);
-                if (userKey == null)
+                vaultItems = (await _vaultItemService.FindAsync(
+                    v => v.Vaults.UserId == UserId,
+                    v => v.Vaults,
+                    vi => vi.Items))
+                    .ToList();
+
+                if (vaultItems.Any())
                 {
-                    return Unauthorized(new { message = "Session expired or master password is required." });
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(5));
+                    _cache.Set(cacheKey, vaultItems, cacheOptions);
                 }
-
-                string cacheKey = $"vault_items_{UserId}";
-                List<VaultItem>? vaultItems = null;
-
-                if (!_cache.TryGetValue(cacheKey, out vaultItems) || vaultItems == null)
-                {
-                    vaultItems = (await _vaultItemService.FindAsync(
-                        v => v.Vaults.UserId == UserId,
-                        v => v.Vaults,
-                        vi => vi.Items))
-                        .ToList();
-
-                    if (vaultItems.Any())
-                    {
-                        var cacheOptions = new MemoryCacheEntryOptions()
-                            .SetSlidingExpiration(TimeSpan.FromMinutes(5));
-                        _cache.Set(cacheKey, vaultItems, cacheOptions);
-                    }
-                }
-
-                vaultItems ??= new List<VaultItem>();
-
-                var decryptedItems = vaultItems.Select(vaultItem => new VaultItemResponse
-                {
-                    VaultItemId = vaultItem.VaultItemId,
-                    SiteName = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedSiteName, userKey),
-                    Url = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedUrl ?? string.Empty, userKey),
-                    Password = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedPassword, userKey),
-                    Notes = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedNotes ?? string.Empty, userKey),
-                    CreatedDate = vaultItem.Items.CreatedDate,
-                    ModifiedDate = vaultItem.Items.ModifiedDate
-                }).ToList();
-
-                return Ok(decryptedItems);
             }
-            catch (Exception ex)
+
+            vaultItems ??= new List<VaultItem>();
+
+            var decryptedItems = vaultItems.Select(vaultItem => new VaultItemResponse
             {
-                _logger.LogError(ex, "An unexpected error occurred in GetAllItems for user {UserId}.", UserId);
-                return StatusCode(500, new { message = "An unexpected error occurred." });
-            }
+                VaultItemId = vaultItem.VaultItemId,
+                SiteName = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedSiteName, userKey),
+                Url = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedUrl ?? string.Empty, userKey),
+                Password = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedPassword, userKey),
+                Notes = _encryptionService.DecryptWithUserKey(vaultItem.Items.EncryptedNotes ?? string.Empty, userKey),
+                CreatedDate = vaultItem.Items.CreatedDate,
+                ModifiedDate = vaultItem.Items.ModifiedDate
+            }).ToList();
+
+            return Ok(decryptedItems);
         }
 
         /// <summary>

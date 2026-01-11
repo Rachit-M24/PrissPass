@@ -9,7 +9,7 @@ namespace PrissPass.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : BaseController
+    public class AuthController : ControllerBase
     {
         private readonly IRepository<Users> _userRepository;
         private readonly JwtService _jwtService;
@@ -31,79 +31,72 @@ namespace PrissPass.Api.Controllers
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegistrationDto request)
         {
-            try
+            if (await _userRepository.AnyAsync(u => u.Email == request.Email))
+                throw new ArgumentException("Please use a different email");
+
+            var user = new Users
             {
-                if (await _userRepository.AnyAsync(u => u.Email == request.Email))
-                    return BadRequest(new { message = "Please use a different email" });
+                Username = request.Username,
+                Email = request.Email,
+                MasterPassword = _encryptionService.HashPassword(request.MasterPassword, out string salt),
+                PasswordSalt = salt
+            };
 
-                var user = new Users
-                {
-                    Username = request.Username,
-                    Email = request.Email,
-                    MasterPassword = _encryptionService.HashPassword(request.MasterPassword, out string salt),
-                    PasswordSalt = salt
-                };
+            await _userRepository.AddAsync(user);
+            await _userRepository.SaveChangesAsync();
 
-                await _userRepository.AddAsync(user);
-                await _userRepository.SaveChangesAsync();
-
-                return Ok(new { message = "You have registered successfully. Please use your master password to login." });
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, new { message = "An error occurred during registration." });
-            }
+            return Ok(new { message = "You have registered successfully. Please use your master password to login." });
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LogInDto request)
         {
-            try
+            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null || !_encryptionService.VerifyPassword(
+                request.MasterPassword,
+                user.MasterPassword,
+                user.PasswordSalt))
             {
-                var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == request.Email);
-                if (user == null || !_encryptionService.VerifyPassword(
-                    request.MasterPassword,
-                    user.MasterPassword,
-                    user.PasswordSalt))
-                {
-                    return Unauthorized(new { message = "Invalid email or password" });
-                }
-
-                var token = _jwtService.GenerateToken(user);
-                var userKey = _encryptionService.DeriveUserKey(request.MasterPassword, user.PasswordSalt);
-
-                var sessionId = Guid.NewGuid().ToString();
-                _cache.Set(sessionId, userKey, new MemoryCacheEntryOptions
-                {
-                    SlidingExpiration = TimeSpan.FromMinutes(30),
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12)
-                });
-
-                SetAuthCookies(token, sessionId);
-
-                return Ok(new
-                {
-                    message = "Login successful",
-                    user = new
-                    {
-                        userId = user.UserId,
-                        username = user.Username,
-                        email = user.Email
-                    }
-                });
+                throw new UnauthorizedAccessException("Invalid email or password");
             }
-            catch (Exception)
+
+            var token = _jwtService.GenerateToken(user);
+            var userKey = _encryptionService.DeriveUserKey(request.MasterPassword, user.PasswordSalt);
+
+            var sessionId = Guid.NewGuid().ToString();
+
+            // Store encryption key in cache with 30-minute expiration
+            _cache.Set(sessionId, userKey, TimeSpan.FromMinutes(30));
+
+            var cookieOptions = new CookieOptions
             {
-                return StatusCode(500, new { message = "An error occurred during login." });
-            }
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(30),
+                Path = "/"
+            };
+
+            Response.Cookies.Append("token", token, cookieOptions);
+            Response.Cookies.Append("sessionId", sessionId, cookieOptions);
+
+            return Ok(new
+            {
+                message = "Login successful",
+                userId = user.UserId,
+                sessionExpiry = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds()
+            });
         }
 
         [HttpPost("logout")]
+        [Authorize]
         public IActionResult Logout()
         {
             try
             {
-                if (Request.Cookies.TryGetValue("sessionId", out var sessionId))
+                var sessionId = Request.Cookies["sessionId"];
+
+                if (!string.IsNullOrEmpty(sessionId))
                 {
                     _cache.Remove(sessionId);
                 }
