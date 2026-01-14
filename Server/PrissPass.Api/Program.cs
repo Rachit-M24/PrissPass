@@ -21,10 +21,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontendDev", policy =>
     {
         policy.WithOrigins("your allowed origins here")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials()
-              .WithExposedHeaders("your exposed headers here");
+      .AllowAnyHeader()
+      .AllowAnyMethod()
+      .AllowCredentials()
+      .SetIsOriginAllowed(origin => true)
+      .WithExposedHeaders("your exposed headers here");
     });
 });
 
@@ -36,7 +37,27 @@ builder.Services.AddAuthentication(options =>
 .AddJwtBearer(options =>
 {
     var jwtKey = builder.Configuration["Jwt:SecretKey"];
-    var key = Encoding.ASCII.GetBytes(jwtKey);
+    var key = Encoding.ASCII.GetBytes(jwtKey ?? throw new InvalidOperationException("JWT Secret Key is not configured."));
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+
+            if (string.IsNullOrEmpty(token))
+            {
+                token = context.Request.Cookies["token"];
+            }
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                context.Token = token;
+            }
+
+            return Task.CompletedTask;
+        }
+    };
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
@@ -81,16 +102,21 @@ builder.Services.AddAutoMapper(mcfg =>
 });
 var app = builder.Build();
 
-// Middleware
+app.UseMiddleware<PrissPass.Api.Middleware.ExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.UseHttpsRedirection(); // Disable HTTPS redirection for development
+
+app.UseCors("your allowed domains here");
+app.UseRouting();
+// app.UseHttpsRedirection(); // Disable HTTPS redirection for development
 app.UseAuthentication();
 app.UseCors("AllowFrontendDev");
 app.UseAuthorization();
+app.UseMiddleware<PrissPass.Api.Middleware.AuthMiddleware>();
 
 app.MapControllers();
 
